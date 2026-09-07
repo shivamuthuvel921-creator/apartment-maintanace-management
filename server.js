@@ -2,15 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'vijay_apartment_secret_2026_production_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'vijay_apartment_secret_2026_production_key';
 
 const app = express();
 app.use(cors());
@@ -182,6 +184,15 @@ function initDB() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
   const userTable = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`).get();
   if(userTable?.sql && !userTable.sql.includes("'committee'")){
@@ -207,6 +218,60 @@ function initDB() {
 }
 
 initDB();
+
+// Extended schema migrations for Resident Profile (safe, idempotent)
+function ensureColumn(table, column, definition){
+  try{
+    const cols = db.prepare(`SELECT name FROM pragma_table_info(?)`).all(table).map(r=>r.name);
+    if(!cols.includes(column)){
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      console.log(`Migrated: ${table}.${column}`);
+    }
+  }catch(e){ console.error('migration fail', column, e.message); }
+}
+ensureColumn('residents','marital_status',`TEXT DEFAULT ''`);
+ensureColumn('residents','preferred_language',`TEXT DEFAULT 'English'`);
+ensureColumn('residents','emergency_relation',`TEXT DEFAULT ''`);
+ensureColumn('residents','emergency_alt_phone',`TEXT DEFAULT ''`);
+ensureColumn('residents','address2',`TEXT DEFAULT ''`);
+ensureColumn('residents','parking_info',`TEXT DEFAULT ''`);
+ensureColumn('residents','move_in_date',`TEXT DEFAULT ''`);
+ensureColumn('residents','photo_url',`TEXT DEFAULT ''`);
+ensureColumn('users','photo_url',`TEXT DEFAULT ''`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notification_preferences (
+    user_id INTEGER PRIMARY KEY,
+    email_notifications INTEGER DEFAULT 1,
+    payment_reminders INTEGER DEFAULT 1,
+    complaint_updates INTEGER DEFAULT 1,
+    maintenance_updates INTEGER DEFAULT 1,
+    event_notifications INTEGER DEFAULT 1,
+    meeting_notifications INTEGER DEFAULT 1,
+    apartment_notices INTEGER DEFAULT 1,
+    updated_at TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+`);
+// Ensure uploads dir exists
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if(!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: (req,file,cb)=> cb(null, uploadDir),
+  filename: (req,file,cb)=>{
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = `profile_${req.user.id}_${Date.now()}${ext}`;
+    cb(null, name);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req,file,cb)=>{
+    const ok = ['image/jpeg','image/png','image/webp','image/jpg'].includes(file.mimetype);
+    if(!ok) return cb(new Error('Only JPG/PNG/WebP allowed'));
+    cb(null, true);
+  }
+});
 
 // Helpers
 function nowISO() { return new Date().toISOString(); }
@@ -239,15 +304,18 @@ function notify(user_id, title, message, type='info') {
 // Auth middleware
 function authRequired(req,res,next){
   const h = req.headers.authorization;
-  if(!h || !h.startsWith('Bearer ')) return res.status(401).json({error:'Unauthorized'});
+  if(!h || !h.startsWith('Bearer ')) return res.status(401).json({error:'Unauthorized. Please log in again.', code:'NO_TOKEN'});
   const token = h.slice(7);
   try{
     const payload = jwt.verify(token, JWT_SECRET);
     const user = db.prepare(`SELECT * FROM users WHERE id=?`).get(payload.id);
-    if(!user || !user.is_active) return res.status(401).json({error:'Account disabled'});
+    if(!user || !user.is_active) return res.status(401).json({error:'Account disabled. Contact admin.', code:'ACCOUNT_DISABLED'});
     req.user = user;
     next();
-  }catch(e){ return res.status(401).json({error:'Invalid token'}) }
+  }catch(e){
+    if(e.name==='TokenExpiredError') return res.status(401).json({error:'Your session has expired. Please log in again.', code:'TOKEN_EXPIRED'});
+    return res.status(401).json({error:'Invalid token. Please log in again.', code:'INVALID_TOKEN'})
+  }
 }
 function requireRole(...roles){
   return (req,res,next)=>{
@@ -480,18 +548,91 @@ function ensureRoleUsers(){
 }
 ensureRoleUsers();
 
-// Auth routes
+// Auth helpers
+function sanitizeIdentifier(s){ return String(s||'').trim().slice(0,256); }
+function doLogin(identifier, password, rememberMe){
+  if(!identifier || !password) return { error: 'Email/Username and password required', status:400 };
+  const id = sanitizeIdentifier(identifier);
+  const user = db.prepare(`SELECT * FROM users WHERE email=? OR username=?`).get(id, id);
+  if(!user) return { error:'Invalid email/username or password.', status:401 };
+  if(!user.is_active) return { error:'Account is disabled. Contact admin.', status:403 };
+  if(!bcrypt.compareSync(password, user.password_hash)) return { error:'Invalid email/username or password.', status:401 };
+  const expiresIn = rememberMe ? '30d' : '8h';
+  const token = jwt.sign({ id:user.id, role:user.role, email:user.email }, JWT_SECRET, { expiresIn });
+  audit(user,'LOGIN','auth',user.id,`User logged in (rememberMe=${!!rememberMe})`);
+  return { token, user:{ id:user.id, username:user.username, email:user.email, role:user.role, display_name:user.display_name, phone:user.phone, resident_id:user.resident_id }, expiresIn };
+}
+
+// Generic login
 app.post('/api/auth/login', (req,res)=>{
-  const { email, username, password } = req.body;
+  const { email, username, password, rememberMe } = req.body;
   const identifier = email || username;
-  if(!identifier || !password) return res.status(400).json({error:'Email/Username and password required'});
-  const user = db.prepare(`SELECT * FROM users WHERE email=? OR username=?`).get(identifier, identifier);
-  if(!user) return res.status(401).json({error:'Invalid email or password.'});
-  if(!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({error:'Invalid email or password.'});
-  if(!user.is_active) return res.status(403).json({error:'Account is disabled. Contact admin.'});
-  const token = jwt.sign({ id:user.id, role:user.role, email:user.email }, JWT_SECRET, { expiresIn:'7d' });
-  audit(user,'LOGIN','auth',user.id,`User logged in`);
-  res.json({ token, user:{ id:user.id, username:user.username, email:user.email, role:user.role, display_name:user.display_name, phone:user.phone, resident_id:user.resident_id } });
+  const result = doLogin(identifier, password, rememberMe);
+  if(result.error) return res.status(result.status).json({error:result.error});
+  res.json({ token:result.token, user:result.user, expiresIn:result.expiresIn });
+});
+// Role-aware Admin login
+app.post('/api/auth/admin/login', (req,res)=>{
+  const { email, username, password, rememberMe } = req.body;
+  const identifier = email || username;
+  const result = doLogin(identifier, password, rememberMe);
+  if(result.error) return res.status(result.status).json({error:result.error});
+  const allowedAdminRoles = ['admin','committee','staff'];
+  if(!allowedAdminRoles.includes(result.user.role)){
+    return res.status(403).json({error:'You do not have permission to access the Admin Portal.', code:'WRONG_PORTAL'});
+  }
+  res.json({ token:result.token, user:result.user, expiresIn:result.expiresIn });
+});
+// Role-aware Resident login
+app.post('/api/auth/resident/login', (req,res)=>{
+  const { email, username, password, rememberMe } = req.body;
+  const identifier = email || username;
+  const result = doLogin(identifier, password, rememberMe);
+  if(result.error) return res.status(result.status).json({error:result.error});
+  if(result.user.role !== 'resident'){
+    return res.status(403).json({error:'This account is not authorized for the Resident Portal.', code:'WRONG_PORTAL'});
+  }
+  res.json({ token:result.token, user:result.user, expiresIn:result.expiresIn });
+});
+app.post('/api/auth/logout', authRequired, (req,res)=>{
+  audit(req.user,'LOGOUT','auth',req.user.id,'User logged out');
+  res.json({message:'Logged out'});
+});
+app.post('/api/auth/forgot-password', (req,res)=>{
+  const { email } = req.body;
+  const id = sanitizeIdentifier(email);
+  if(!id) return res.status(400).json({error:'Email is required'});
+  const user = db.prepare(`SELECT * FROM users WHERE email=?`).get(id);
+  if(!user) return res.json({message:'If the account exists, a reset link has been generated.', devNote:'No user found - generic response'});
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now()+60*60*1000).toISOString();
+  try{
+    db.prepare(`DELETE FROM password_resets WHERE user_id=?`).run(user.id);
+    db.prepare(`INSERT INTO password_resets (user_id, token_hash, expires_at, used, created_at) VALUES (?,?,?,?,?)`).run(user.id, tokenHash, expiresAt, 0, nowISO());
+  }catch(e){ return res.status(500).json({error:'Failed to create reset token'}); }
+  audit({id:user.id, display_name:user.display_name, role:user.role},'FORGOT_PASSWORD','auth',user.id,'Password reset requested');
+  // In production, email would be sent. For this app, return token for testing/demo.
+  res.json({message:'Password reset token generated. Use it within 1 hour.', resetToken: rawToken, expiresAt, email: user.email});
+});
+app.post('/api/auth/reset-password', (req,res)=>{
+  const { token, newPassword, password } = req.body;
+  const pwd = newPassword || password;
+  if(!token || !pwd) return res.status(400).json({error:'Reset token and new password are required'});
+  if(String(pwd).length < 6) return res.status(400).json({error:'Password must be at least 6 characters'});
+  const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
+  const row = db.prepare(`SELECT * FROM password_resets WHERE token_hash=?`).get(tokenHash);
+  if(!row) return res.status(400).json({error:'Invalid or expired reset token'});
+  if(row.used) return res.status(400).json({error:'This reset link has already been used'});
+  if(new Date(row.expires_at) < new Date()) return res.status(400).json({error:'Reset token has expired. Please request a new one.'});
+  const user = db.prepare(`SELECT * FROM users WHERE id=?`).get(row.user_id);
+  if(!user) return res.status(404).json({error:'User not found'});
+  const hash = bcrypt.hashSync(pwd, 10);
+  db.prepare(`UPDATE users SET password_hash=? WHERE id=?`).run(hash, user.id);
+  db.prepare(`UPDATE password_resets SET used=1 WHERE id=?`).run(row.id);
+  audit(user,'RESET_PASSWORD','auth',user.id,'Password reset via token');
+  notify(user.id,'Password changed','Your password was successfully reset','success');
+  res.json({message:'Password has been reset successfully. Please log in with your new password.'});
 });
 app.get('/api/auth/me', authRequired, (req,res)=>{
   const u = req.user;
@@ -499,7 +640,144 @@ app.get('/api/auth/me', authRequired, (req,res)=>{
   if(u.resident_id) resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(u.resident_id);
   let house=null;
   if(resident?.house_id) house = db.prepare(`SELECT * FROM houses WHERE id=?`).get(resident.house_id);
-  res.json({ user:{ id:u.id, username:u.username, email:u.email, role:u.role, display_name:u.display_name, phone:u.phone, resident_id:u.resident_id }, resident, house });
+  res.json({ user:{ id:u.id, username:u.username, email:u.email, role:u.role, display_name:u.display_name, phone:u.phone, resident_id:u.resident_id, photo_url:u.photo_url||resident?.photo_url||'' }, resident, house });
+});
+
+// ============ RESIDENT PROFILE APIS (functional, secure, DB-backed) ============
+// helper to get full resident profile (ownership verified)
+function getResidentProfile(user){
+  const resident = user.resident_id ? db.prepare(`SELECT * FROM residents WHERE id=?`).get(user.resident_id) : null;
+  if(!resident) return { user, resident:null, house:null, family:[], prefs:null };
+  const house = resident.house_id ? db.prepare(`SELECT * FROM houses WHERE id=?`).get(resident.house_id) : null;
+  const family = resident.house_id ? db.prepare(`SELECT * FROM residents WHERE house_id=? AND id!=?`).all(resident.house_id, resident.id) : [];
+  let prefs = db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(user.id);
+  if(!prefs){
+    db.prepare(`INSERT INTO notification_preferences (user_id, updated_at) VALUES (?,?)`).run(user.id, nowISO());
+    prefs = db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(user.id);
+  }
+  // last login from audit_logs
+  const lastLogin = db.prepare(`SELECT timestamp FROM audit_logs WHERE user_id=? AND action='LOGIN' ORDER BY timestamp DESC LIMIT 1`).get(user.id);
+  return { user, resident, house, family, prefs, lastLogin: lastLogin?.timestamp||null };
+}
+app.get('/api/resident/profile', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const data = getResidentProfile(req.user);
+  if(!data.resident) return res.status(404).json({error:'Resident profile not found'});
+  res.json({
+    user:{ id:data.user.id, username:data.user.username, email:data.user.email, role:data.user.role, display_name:data.user.display_name, phone:data.user.phone, resident_id:data.user.resident_id, photo_url:data.user.photo_url||data.resident.photo_url||'' },
+    resident: data.resident,
+    house: data.house,
+    family: data.family||[],
+    preferences: data.prefs,
+    lastLogin: data.lastLogin,
+    registrationDate: data.user.created_at||data.resident.created_at
+  });
+});
+// alias /resident/profile for frontend compat (same)
+app.get('/api/profile', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const data = getResidentProfile(req.user);
+  if(!data.resident) return res.status(404).json({error:'Resident profile not found'});
+  res.json({ user:{ id:data.user.id, username:data.user.username, email:data.user.email, role:data.user.role, display_name:data.user.display_name, phone:data.user.phone, resident_id:data.user.resident_id, photo_url:data.user.photo_url||data.resident.photo_url||'' }, resident: data.resident, house: data.house, family: data.family||[], preferences: data.prefs, lastLogin: data.lastLogin, registrationDate: data.user.created_at||data.resident.created_at });
+});
+app.put('/api/resident/profile', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.user.resident_id);
+  if(!resident) return res.status(404).json({error:'Resident profile not found'});
+  const allowed = ['name','phone','email','dob','gender','marital_status','preferred_language','address','address2','city','state','country','postal_code','emergency_name','emergency_relation','emergency_phone','emergency_alt_phone'];
+  const updates={};
+  allowed.forEach(f=> { if(req.body[f]!==undefined) updates[f]=String(req.body[f]).trim(); });
+  // Validation
+  if(updates.name!==undefined && !updates.name) return res.status(400).json({error:'Full name is required.'});
+  if(updates.email!==undefined && updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) return res.status(400).json({error:'Please enter a valid email address.'});
+  if(updates.phone!==undefined && updates.phone && !/^[0-9+\- ]{7,15}$/.test(updates.phone)) return res.status(400).json({error:'Please enter a valid phone number.'});
+  if(updates.emergency_phone!==undefined && updates.emergency_phone && !/^[0-9+\- ]{7,15}$/.test(updates.emergency_phone)) return res.status(400).json({error:'Please enter a valid emergency phone number.'});
+  if(updates.postal_code!==undefined && updates.postal_code && !/^[0-9]{4,10}$/.test(updates.postal_code)) return res.status(400).json({error:'Please enter a valid postal code.'});
+  if(updates.dob!==undefined && updates.dob){
+    const d=new Date(updates.dob);
+    if(isNaN(d.getTime())) return res.status(400).json({error:'Please enter a valid date of birth.'});
+    if(d>new Date()) return res.status(400).json({error:'Date of birth cannot be in the future.'});
+  }
+  if(updates.email && updates.email!==resident.email){
+    const exists=db.prepare(`SELECT id FROM users WHERE email=? AND id!=?`).get(updates.email, req.user.id);
+    if(exists) return res.status(400).json({error:'Email is already in use'});
+    const existsRes=db.prepare(`SELECT id FROM residents WHERE email=? AND id!=?`).get(updates.email, resident.id);
+    if(existsRes) return res.status(400).json({error:'Email is already in use'});
+  }
+  // Build dynamic update
+  const fields = Object.keys(updates);
+  if(fields.length===0) return res.status(400).json({error:'No fields to update'});
+  const setClause = fields.map(f=>`${f}=?`).join(', ');
+  const vals = fields.map(f=>updates[f]);
+  vals.push(resident.id);
+  db.prepare(`UPDATE residents SET ${setClause} WHERE id=?`).run(...vals);
+  // Sync user table display_name/phone/email/photo if changed
+  if(updates.name||updates.phone||updates.email){
+    const u = db.prepare(`SELECT * FROM users WHERE id=?`).get(req.user.id);
+    db.prepare(`UPDATE users SET display_name=?, phone=?, email=?, username=? WHERE id=?`).run(updates.name||u.display_name, updates.phone||u.phone, updates.email||u.email, (updates.email||u.email).split('@')[0], req.user.id);
+  }
+  const updated = db.prepare(`SELECT * FROM residents WHERE id=?`).get(resident.id);
+  audit(req.user,'UPDATE','resident_profile',resident.id,'Resident updated profile');
+  const freshUser = db.prepare(`SELECT * FROM users WHERE id=?`).get(req.user.id);
+  res.json({ message:'Profile updated successfully.', resident: updated, user:{ id:freshUser.id, username:freshUser.username, email:freshUser.email, display_name:freshUser.display_name, phone:freshUser.phone, photo_url:freshUser.photo_url||updated.photo_url } });
+});
+app.post('/api/resident/profile/photo', authRequired, (req,res,next)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  next();
+}, (req,res)=>{
+  upload.single('photo')(req,res, (err)=>{
+    if(err){
+      if(err.code==='LIMIT_FILE_SIZE') return res.status(400).json({error:'File too large. Max 2MB.'});
+      return res.status(400).json({error:err.message||'Upload failed'});
+    }
+    if(!req.file) return res.status(400).json({error:'No file uploaded'});
+    const photoUrl = `/uploads/${req.file.filename}`;
+    // verify ownership -> update both residents and users
+    db.prepare(`UPDATE residents SET photo_url=? WHERE id=?`).run(photoUrl, req.user.resident_id);
+    db.prepare(`UPDATE users SET photo_url=? WHERE id=?`).run(photoUrl, req.user.id);
+    audit(req.user,'UPDATE','resident_photo',req.user.resident_id,'Updated profile photo');
+    res.json({ message:'Profile photo updated successfully.', photo_url: photoUrl });
+  });
+});
+app.delete('/api/resident/profile/photo', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  db.prepare(`UPDATE residents SET photo_url='' WHERE id=?`).run(req.user.resident_id);
+  db.prepare(`UPDATE users SET photo_url='' WHERE id=?`).run(req.user.id);
+  res.json({ message:'Profile photo removed.' });
+});
+app.put('/api/resident/profile/password', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  if(!currentPassword||!newPassword||!confirmPassword) return res.status(400).json({error:'All password fields are required.'});
+  if(newPassword.length<6) return res.status(400).json({error:'New password must be at least 6 characters.'});
+  if(newPassword!==confirmPassword) return res.status(400).json({error:'Passwords do not match.'});
+  const u=db.prepare(`SELECT * FROM users WHERE id=?`).get(req.user.id);
+  if(!bcrypt.compareSync(currentPassword, u.password_hash)) return res.status(400).json({error:'Current password is incorrect.'});
+  const hash=bcrypt.hashSync(newPassword,10);
+  db.prepare(`UPDATE users SET password_hash=? WHERE id=?`).run(hash, req.user.id);
+  audit(req.user,'UPDATE','password',req.user.id,'Changed password');
+  res.json({ message:'Password changed successfully.' });
+});
+app.get('/api/resident/profile/notifications', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  let prefs=db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(req.user.id);
+  if(!prefs){ db.prepare(`INSERT INTO notification_preferences (user_id, updated_at) VALUES (?,?)`).run(req.user.id, nowISO()); prefs=db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(req.user.id); }
+  res.json(prefs);
+});
+app.put('/api/resident/profile/notifications', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  let prefs=db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(req.user.id);
+  if(!prefs){ db.prepare(`INSERT INTO notification_preferences (user_id, updated_at) VALUES (?,?)`).run(req.user.id, nowISO()); prefs=db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(req.user.id); }
+  const allowed=['email_notifications','payment_reminders','complaint_updates','maintenance_updates','event_notifications','meeting_notifications','apartment_notices'];
+  const updates={};
+  allowed.forEach(k=>{ if(req.body[k]!==undefined) updates[k]= req.body[k]?1:0; });
+  if(Object.keys(updates).length===0) return res.status(400).json({error:'No preferences to update'});
+  const setClause=Object.keys(updates).map(k=>`${k}=?`).join(', ');
+  const vals=Object.values(updates);
+  vals.push(nowISO(), req.user.id);
+  db.prepare(`UPDATE notification_preferences SET ${setClause}, updated_at=? WHERE user_id=?`).run(...vals);
+  const fresh=db.prepare(`SELECT * FROM notification_preferences WHERE user_id=?`).get(req.user.id);
+  res.json({ message:'Notification preferences updated.', preferences: fresh });
 });
 
 // Dashboard
@@ -526,7 +804,7 @@ app.get('/api/dashboard/kpis', authRequired, (req,res)=>{
     const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.user.resident_id);
     const houseId = resident?.house_id;
     const myDue = houseId ? db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Pending'`).get(houseId).s : 0;
-    const myPaid = houseId ? db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Paid' ORDER BY date DESC LIMIT 1`).get(houseId).s : 0;
+    const myPaid = houseId ? db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Paid'`).get(houseId).s : 0;
     const lastPayment = houseId ? db.prepare(`SELECT * FROM payments WHERE house_id=? AND status='Paid' ORDER BY date DESC LIMIT 1`).get(houseId) : null;
     const myOpenComplaints = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE resident_id=? AND status IN ('Open','Assigned','In Progress')`).get(req.user.resident_id).c;
     const myMaintenance = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets WHERE house_id=? AND status IN ('Open','Assigned','In Progress')`).get(houseId||0).c;
@@ -540,10 +818,23 @@ app.get('/api/dashboard/kpis', authRequired, (req,res)=>{
 });
 
 app.get('/api/dashboard/fund-trend', authRequired, (req,res)=>{
-  // monthly trend last 6 months from payments
+  // For resident: only own house payments trend, else global
+  if(req.user.role==='resident' && req.user.resident_id){
+    const me = db.prepare(`SELECT house_id FROM residents WHERE id=?`).get(req.user.resident_id);
+    if(me?.house_id){
+      const rows = db.prepare(`SELECT substr(date,1,7) as month, SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END) as collected, SUM(CASE WHEN status='Pending' THEN amount ELSE 0 END) as pending FROM payments WHERE house_id=? GROUP BY month ORDER BY month ASC LIMIT 12`).all(me.house_id);
+      if(rows.length===0){
+        // no history yet -> show single point with actual pending
+        const pending = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Pending'`).get(me.house_id).s;
+        const paid = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Paid'`).get(me.house_id).s;
+        const cur = new Date().toISOString().slice(0,7);
+        return res.json([{ month:cur, collected:paid, pending }]);
+      }
+      return res.json(rows);
+    }
+  }
   const rows = db.prepare(`SELECT substr(date,1,7) as month, SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END) as collected, SUM(CASE WHEN status='Pending' THEN amount ELSE 0 END) as pending FROM payments GROUP BY month ORDER BY month ASC LIMIT 12`).all();
   if(rows.length===0){
-    // fallback demo trend
     res.json([
       { month:'2026-02', collected:145000, pending:12000 },
       { month:'2026-03', collected:152000, pending:8000 },
@@ -557,12 +848,25 @@ app.get('/api/dashboard/fund-trend', authRequired, (req,res)=>{
   }
 });
 app.get('/api/dashboard/maintenance-stats', authRequired, (req,res)=>{
+  if(req.user.role==='resident' && req.user.resident_id){
+    const me = db.prepare(`SELECT house_id FROM residents WHERE id=?`).get(req.user.resident_id);
+    const stats = me?.house_id ? db.prepare(`SELECT status, COUNT(*) as c FROM maintenance_tickets WHERE house_id=? GROUP BY status`).all(me.house_id) : [];
+    const map={};
+    stats.forEach(s=> map[s.status]=s.c);
+    return res.json({ open:map['Open']||0, assigned:map['Assigned']||0, inProgress:map['In Progress']||0, completed:map['Completed']||0, closed:map['Closed']||0 });
+  }
   const stats = db.prepare(`SELECT status, COUNT(*) as c FROM maintenance_tickets GROUP BY status`).all();
   const map={};
   stats.forEach(s=> map[s.status]=s.c);
   res.json({ open:map['Open']||0, assigned:map['Assigned']||0, inProgress:map['In Progress']||0, completed:map['Completed']||0, closed:map['Closed']||0 });
 });
 app.get('/api/dashboard/complaint-stats', authRequired, (req,res)=>{
+  if(req.user.role==='resident' && req.user.resident_id){
+    const stats = db.prepare(`SELECT status, COUNT(*) as c FROM complaints WHERE resident_id=? GROUP BY status`).all(req.user.resident_id);
+    const map={}; stats.forEach(s=> map[s.status]=s.c);
+    const pri = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE resident_id=? AND priority='High' AND status!='Closed'`).get(req.user.resident_id).c;
+    return res.json({ ...map, highPriority:pri });
+  }
   const stats = db.prepare(`SELECT status, COUNT(*) as c FROM complaints GROUP BY status`).all();
   const map={}; stats.forEach(s=> map[s.status]=s.c);
   const pri = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE priority='High'`).get().c;
@@ -570,7 +874,14 @@ app.get('/api/dashboard/complaint-stats', authRequired, (req,res)=>{
 });
 app.get('/api/dashboard/recent-activity', authRequired, (req,res)=>{
   const logs = db.prepare(`SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 10`).all();
-  // also combine recent payments/complaints/maintenance for timeline
+  if(req.user.role==='resident' && req.user.resident_id){
+    const me = db.prepare(`SELECT house_id FROM residents WHERE id=?`).get(req.user.resident_id);
+    const payments = db.prepare(`SELECT 'Payment '||status as title, '₹'||amount||' — '||date||' · '||method as desc, created_at as timestamp FROM payments WHERE resident_id=? OR house_id=? ORDER BY created_at DESC LIMIT 3`).all(req.user.resident_id, me?.house_id||0);
+    const complaints = db.prepare(`SELECT 'Complaint '||status as title, subject||' ('||priority||')' as desc, created_at as timestamp FROM complaints WHERE resident_id=? ORDER BY created_at DESC LIMIT 3`).all(req.user.resident_id);
+    const maintenance = me?.house_id ? db.prepare(`SELECT 'Maintenance '||status as title, category||' — '||location as desc, created_at as timestamp FROM maintenance_tickets WHERE house_id=? ORDER BY created_at DESC LIMIT 3`).all(me.house_id) : [];
+    const combined = [...payments,...complaints,...maintenance].sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)).slice(0,8);
+    return res.json({ logs: logs.filter(l=> String(l.user_id)===String(req.user.id)).slice(0,5), combined });
+  }
   const payments = db.prepare(`SELECT 'Payment recorded' as title, '₹'||amount||' — House '||(SELECT house_no FROM houses WHERE id=house_id) as desc, created_at as timestamp FROM payments ORDER BY created_at DESC LIMIT 3`).all();
   const complaints = db.prepare(`SELECT 'Complaint '||status as title, subject||' — House '||(SELECT house_no FROM houses WHERE id=house_id) as desc, created_at as timestamp FROM complaints ORDER BY created_at DESC LIMIT 3`).all();
   const maintenance = db.prepare(`SELECT 'Maintenance '||status as title, category||' — '||location as desc, created_at as timestamp FROM maintenance_tickets ORDER BY created_at DESC LIMIT 3`).all();
@@ -584,6 +895,117 @@ app.get('/api/dashboard/upcoming-events', authRequired, (req,res)=>{
 app.get('/api/dashboard/upcoming-meetings', authRequired, (req,res)=>{
   const mt = db.prepare(`SELECT * FROM meetings WHERE status='Upcoming' ORDER BY date ASC LIMIT 5`).all();
   res.json(mt);
+});
+
+// Dedicated spec endpoints: /resident/dashboard and /admin/dashboard  (also /api/... aliases)
+function buildResidentDashboard(user){
+  const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(user.resident_id);
+  const house = resident?.house_id ? db.prepare(`SELECT * FROM houses WHERE id=?`).get(resident.house_id) : null;
+  const houseId = resident?.house_id || 0;
+  const myDue = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Pending'`).get(houseId).s;
+  const lastPayment = db.prepare(`SELECT * FROM payments WHERE (house_id=? OR resident_id=?) AND status='Paid' ORDER BY date DESC LIMIT 1`).get(houseId, user.resident_id);
+  const myOpenComplaints = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE resident_id=? AND status IN ('Open','Assigned','In Progress')`).get(user.resident_id).c;
+  const myMaintenance = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets WHERE house_id=? AND status IN ('Open','Assigned','In Progress')`).get(houseId).c;
+  const payments = db.prepare(`SELECT * FROM payments WHERE resident_id=? OR house_id=? ORDER BY date DESC LIMIT 5`).all(user.resident_id, houseId);
+  const complaints = db.prepare(`SELECT * FROM complaints WHERE resident_id=? ORDER BY created_at DESC LIMIT 5`).all(user.resident_id);
+  const maintenanceStats = (()=>{ const stats=db.prepare(`SELECT status, COUNT(*) as c FROM maintenance_tickets WHERE house_id=? GROUP BY status`).all(houseId); const m={}; stats.forEach(s=>m[s.status]=s.c); return {open:m['Open']||0, assigned:m['Assigned']||0, inProgress:m['In Progress']||0, completed:m['Completed']||0}; })();
+  const fundTrend = db.prepare(`SELECT substr(date,1,7) as month, SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END) as collected, SUM(CASE WHEN status='Pending' THEN amount ELSE 0 END) as pending FROM payments WHERE house_id=? OR resident_id=? GROUP BY month ORDER BY month ASC LIMIT 12`).all(houseId, user.resident_id);
+  const upcomingEvents = db.prepare(`SELECT * FROM events WHERE status='Upcoming' ORDER BY date ASC LIMIT 3`).all();
+  const upcomingMeetings = db.prepare(`SELECT * FROM meetings WHERE status='Upcoming' ORDER BY date ASC LIMIT 3`).all();
+  return { welcome: `Welcome, ${resident?.name||user.display_name}`, date: new Date().toISOString().slice(0,10), house, resident, myDue, lastPayment, myOpenComplaints, myMaintenance, payments, complaints, maintenanceStats, fundTrend: fundTrend.length?fundTrend:[{month:new Date().toISOString().slice(0,7), collected:0, pending:myDue}], upcomingEvents, upcomingMeetings };
+}
+function buildAdminDashboard(){
+  const totalHouses = db.prepare(`SELECT COUNT(*) as c FROM houses`).get().c;
+  const occupied = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE occupancy='Occupied'`).get().c;
+  const vacant = totalHouses - occupied;
+  const totalFamilies = db.prepare(`SELECT COUNT(DISTINCT house_id) as c FROM residents WHERE house_id IS NOT NULL`).get().c;
+  const totalResidents = db.prepare(`SELECT COUNT(*) as c FROM residents`).get().c;
+  const totalCollected = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE status='Paid'`).get().s;
+  const pendingAmount = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE status='Pending'`).get().s;
+  const bhk1 = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE bhk=1`).get().c;
+  const bhk2 = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE bhk=2`).get().c;
+  const bhk3 = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE bhk=3`).get().c;
+  const openComplaints = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE status IN ('Open','Assigned','In Progress')`).get().c;
+  const highPriority = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE priority='High' AND status!='Closed'`).get().c;
+  const openMaintenance = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets WHERE status IN ('Open','Assigned','In Progress')`).get().c;
+  const fundTrend = db.prepare(`SELECT substr(date,1,7) as month, SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END) as collected, SUM(CASE WHEN status='Pending' THEN amount ELSE 0 END) as pending FROM payments GROUP BY month ORDER BY month ASC LIMIT 12`).all();
+  const maintenanceStats = (()=>{ const stats=db.prepare(`SELECT status, COUNT(*) as c FROM maintenance_tickets GROUP BY status`).all(); const m={}; stats.forEach(s=>m[s.status]=s.c); return {open:m['Open']||0, assigned:m['Assigned']||0, inProgress:m['In Progress']||0, completed:m['Completed']||0}; })();
+  const recentPayments = db.prepare(`SELECT p.*, h.house_no, r.name as resident_name FROM payments p LEFT JOIN houses h ON h.id=p.house_id LEFT JOIN residents r ON r.id=p.resident_id ORDER BY p.created_at DESC LIMIT 5`).all();
+  const upcomingEvents = db.prepare(`SELECT * FROM events WHERE status='Upcoming' ORDER BY date ASC LIMIT 5`).all();
+  const upcomingMeetings = db.prepare(`SELECT * FROM meetings WHERE status='Upcoming' ORDER BY date ASC LIMIT 5`).all();
+  // Always return arrays for list-type data (fixes slice is not a function)
+  const complaintsList = db.prepare(`SELECT c.*, h.house_no, r.name as resident_name FROM complaints c LEFT JOIN houses h ON h.id=c.house_id LEFT JOIN residents r ON r.id=c.resident_id ORDER BY c.created_at DESC LIMIT 5`).all();
+  const residentsList = db.prepare(`SELECT r.*, h.house_no FROM residents r LEFT JOIN houses h ON h.id=r.house_id ORDER BY r.created_at DESC LIMIT 5`).all();
+  const maintenanceList = db.prepare(`SELECT m.*, h.house_no FROM maintenance_tickets m LEFT JOIN houses h ON h.id=m.house_id ORDER BY m.created_at DESC LIMIT 5`).all();
+  const housesList = db.prepare(`SELECT h.*, r.name as resident_name FROM houses h LEFT JOIN residents r ON r.id=h.resident_id ORDER BY h.created_at DESC LIMIT 5`).all();
+  const notificationsList = db.prepare(`SELECT * FROM notifications ORDER BY created_at DESC LIMIT 5`).all();
+  const recentActivities = db.prepare(`SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 5`).all();
+  // Ensure every collection is always an array (never null/object/string)
+  const ensureArr = (v) => Array.isArray(v) ? v : [];
+  const safeComplaints = ensureArr(complaintsList);
+  const safeResidents = ensureArr(residentsList);
+  const safeHouses = ensureArr(housesList);
+  const safePayments = ensureArr(recentPayments);
+  const safeMaintenance = ensureArr(maintenanceList);
+  const safeEvents = ensureArr(upcomingEvents);
+  const safeMeetings = ensureArr(upcomingMeetings);
+  const safeNotifications = ensureArr(notificationsList);
+  const safeActivities = ensureArr(recentActivities);
+  const fwTrend = Array.isArray(fundTrend) && fundTrend.length ? fundTrend : [
+      { month:'2026-02', collected:145000, pending:12000 },
+      { month:'2026-03', collected:152000, pending:8000 },
+      { month:'2026-04', collected:148000, pending:15000 },
+      { month:'2026-05', collected:162000, pending:5000 },
+      { month:'2026-06', collected:158000, pending:9500 },
+      { month:'2026-07', collected:172000, pending:7500 },
+  ];
+  return {
+    // numeric KPIs
+    totalHouses, occupied, vacant, totalFamilies, totalResidents, totalCollected, pendingAmount,
+    bhk:{bhk1,bhk2,bhk3},
+    // stats objects (backward compat)
+    complaintStats:{open:openComplaints, highPriority},
+    openComplaints, highPriority,
+    openMaintenance,
+    maintenanceStats,
+    fundTrend: fwTrend,
+    // === STANDARDIZED ARRAY KEYS (spec compliant) ===
+    // Primary keys expected by frontend: must be arrays
+    complaints: safeComplaints,
+    residents: safeResidents,
+    houses: safeHouses,
+    payments: safePayments,
+    maintenance: safeMaintenance,
+    events: safeEvents,
+    meetings: safeMeetings,
+    notifications: safeNotifications,
+    activities: safeActivities,
+    recentActivities: safeActivities,
+    // statistics block (spec)
+    statistics: {
+      totalHouses, totalResidents,
+      pendingPayments: pendingAmount,
+      totalCollection: totalCollected,
+      openComplaints, activeMaintenance: openMaintenance,
+      upcomingEvents: safeEvents.length
+    },
+    // aliases for backward compat (old frontend variants)
+    complaintsList: safeComplaints,
+    complaintsArray: safeComplaints,
+    recentPayments: safePayments,
+    maintenanceList: safeMaintenance,
+    upcomingEvents: safeEvents,
+    upcomingMeetings: safeMeetings,
+    housesList: safeHouses,
+    residentsList: safeResidents,
+  };
+}
+app.get('/api/resident/dashboard', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  res.json(buildResidentDashboard(req.user));
+});
+app.get('/api/admin/dashboard', authRequired, requireRole('admin','committee','staff'), (req,res)=>{
+  res.json(buildAdminDashboard());
 });
 
 // Houses
@@ -1223,6 +1645,9 @@ app.get('/api/export/:type', authRequired, (req,res)=>{
   audit(req.user,'EXPORT',type,type,`Exported ${type}`);
   res.json({ type, data, exportedAt: nowISO() });
 });
+
+// API 404 handler - must be before SPA fallback to avoid returning HTML for unknown API routes (fixes Unexpected token '<')
+app.use('/api', (req,res)=> res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` }));
 
 // Static frontend
 const publicDir = path.join(__dirname, 'public');

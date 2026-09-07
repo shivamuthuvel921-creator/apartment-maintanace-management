@@ -1,0 +1,1287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Vijay Apartment Care</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+tailwind.config={
+  theme:{
+    extend:{
+      fontFamily:{ sans:['Inter','system-ui','sans-serif'] }
+    }
+  }
+}
+</script>
+<style>
+*{font-family:'Inter',system-ui,sans-serif}
+body{background:#f6f8fb;background-image:linear-gradient(rgba(15,23,42,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.025) 1px,transparent 1px);background-size:32px 32px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+.kc{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;transition:box-shadow .2s}
+.kc:hover{box-shadow:0 4px 20px rgba(0,0,0,.05)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s;justify-content:center}
+.bp{background:#2563eb;color:#fff}.bp:hover{background:#1d4ed8}.bp:disabled{opacity:.6;cursor:not-allowed}
+.bs{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}.bs:hover{background:#e2e8f0}
+.bd{background:#ef4444;color:#fff}.bd:hover{background:#dc2626}
+.bx{padding:6px 12px;font-size:12px;border-radius:8px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.bs-s{background:#dcfce7;color:#166534}.bs-w{background:#fef3c7;color:#92400e}.bs-d{background:#fee2e2;color:#991b1b}.bs-i{background:#dbeafe;color:#1e40af}.bs-n{background:#f1f5f9;color:#475569}
+.mo{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.mo.on{opacity:1;pointer-events:auto}
+.md{background:#fff;border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.15);transform:translateY(8px) scale(.98);transition:transform .2s}
+.mo.on .md{transform:translateY(0) scale(1)}
+.lp{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eff6ff 0%,#f8fafc 50%,#f0fdfa 100%);padding:20px}
+.in{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;transition:border .15s,box-shadow .15s;background:#fff}
+.in:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.fl{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px}
+.sl{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;color:#475569;transition:background .15s,color .15s}
+.sl:hover{background:#f1f5f9;color:#0f172a}
+.sl.active{background:#eff6ff;color:#2563eb}
+.sl svg,.sl i{width:18px;height:18px;flex-shrink:0}
+.av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+.tc{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.12);pointer-events:auto;animation:slideIn .25s ease}
+.toast.success{background:#10b981;color:#fff}.toast.error{background:#ef4444;color:#fff}.toast.info{background:#0f172a;color:#fff}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.sr{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(6px);z-index:90;display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;opacity:0;pointer-events:none;transition:opacity .2s}
+.sr.on{opacity:1;pointer-events:auto}
+.sp{background:#fff;border-radius:16px;width:92%;max-width:560px;box-shadow:0 25px 60px rgba(0,0,0,.2);overflow:hidden;transform:translateY(-8px);transition:transform .2s}
+.sr.on .sp{transform:translateY(0)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 16px;border-bottom:1px solid #e2e8f0;background:#f8fafc;white-space:nowrap}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:hover td{background:#f8fafc}
+.sidebar-collapsed{width:72px !important}
+.sidebar-collapsed #sb-brand,.sidebar-collapsed .sl span,.sidebar-collapsed #sb-role{display:none}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:2px}
+@media(max-width:1023px){#sidebar{transform:translateX(-100%);box-shadow:12px 0 30px rgba(15,23,42,.12)}#main-area{margin-left:0!important}.sidebar-collapsed{width:260px!important}.sidebar-collapsed #sb-brand,.sidebar-collapsed .sl span,.sidebar-collapsed #sb-role{display:block}}
+@media(max-width:640px){.kc{padding:16px}.in{font-size:16px}.btn{min-height:42px}.md{max-height:92vh}.sr{padding-top:5vh}table{min-width:680px}}
+</style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+<!-- Toast -->
+<div id="tc" class="tc"></div>
+
+<!-- Login Page -->
+<div id="login-page" class="lp">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-slate-100">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-200">
+        <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
+      </div>
+      <h1 class="text-xl font-bold text-slate-900">Vijay Apartment Care</h1>
+      <p class="text-sm text-slate-500 mt-1">Apartment Maintenance Management System</p>
+    </div>
+    <div id="login-error" class="hidden bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 border border-red-100"></div>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="mb-4">
+        <label class="fl">Email or Username</label>
+        <input type="text" id="login-email" class="in" placeholder="admin@vijayapartment.com" required value="admin@vijayapartment.com">
+      </div>
+      <div class="mb-6">
+        <label class="fl">Password</label>
+        <input type="password" id="login-password" class="in" placeholder="Enter password" required value="admin123">
+      </div>
+      <button type="submit" class="btn bp w-full py-3 text-sm" id="login-btn">Sign In</button>
+    </form>
+    <div class="mt-6 bg-slate-50 rounded-xl p-3 border border-slate-100">
+      <p class="text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Demo Accounts</p>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        <b class="text-slate-700">Admin:</b> admin@vijayapartment.com / admin123<br>
+        <b class="text-slate-700">Resident:</b> priya.sharma@example.com / resident123<br>
+        <b class="text-slate-700">Resident:</b> vikram.singh@example.com / resident123
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- App Shell -->
+<div id="app" class="hidden">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-40 transition-all duration-200 flex flex-col" style="width:260px">
+    <div class="px-4 py-5 flex items-center gap-3 border-b border-slate-100">
+      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
+      </div>
+      <div id="sb-brand" class="min-w-0">
+        <p class="font-bold text-slate-900 text-[13px] leading-none truncate">Vijay Apartment Care</p>
+        <p class="text-xs text-slate-400 truncate" id="sb-role">Admin Panel</p>
+      </div>
+      <button onclick="toggleSB()" class="ml-auto p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hidden lg:flex">
+        <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-0.5" id="sb-nav"></nav>
+    <div class="px-3 py-3 border-t border-slate-100">
+      <div class="sl text-red-500 hover:bg-red-50 hover:text-red-600" onclick="logout()">
+        <i data-lucide="log-out"></i><span>Logout</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Area -->
+  <div id="main-area" class="transition-all duration-200" style="margin-left:260px">
+    <header class="sticky top-0 bg-white/80 backdrop-blur-lg border-b border-slate-200 z-30 h-16 flex items-center px-4 sm:px-6 gap-3 lg:px-8">
+      <button onclick="openMob()" class="lg:hidden p-2 rounded-lg hover:bg-slate-100">
+        <i data-lucide="menu" class="w-5 h-5 text-slate-600"></i>
+      </button>
+      <div id="crumb" class="text-sm text-slate-500 hidden sm:block truncate"></div>
+      <div class="ml-auto flex items-center gap-1 sm:gap-2">
+        <button onclick="openSearch()" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500" title="Search (Ctrl+K)">
+          <i data-lucide="search" class="w-5 h-5"></i>
+        </button>
+        <div class="relative">
+          <button onclick="togNotif()" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 relative">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="nb" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 rounded-full text-[9px] text-white font-bold flex items-center justify-center px-1"></span>
+          </button>
+          <div id="n-dd" class="hidden absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-slate-200 max-h-96 overflow-y-auto z-40"></div>
+        </div>
+        <div class="flex items-center gap-3 pl-2 sm:pl-3 border-l border-slate-200 cursor-pointer relative" onclick="toggleProfileMenu(event)">
+          <div id="h-av" class="av bg-blue-600 text-xs">A</div>
+          <div class="hidden md:block text-left">
+            <p class="text-sm font-semibold text-slate-800 leading-none" id="h-name">-</p>
+            <p class="text-xs text-slate-400" id="h-role">-</p>
+          </div>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 hidden md:block"></i>
+          <div id="pm" class="hidden absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
+            <div class="px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer flex items-center gap-2" onclick="nav('my-profile')"><i data-lucide="user" class="w-4 h-4"></i>My Profile</div>
+            <div class="px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer flex items-center gap-2" onclick="nav('settings')"><i data-lucide="settings" class="w-4 h-4"></i>Settings</div>
+            <hr class="my-1 border-slate-100">
+            <div class="px-4 py-2 text-sm text-red-500 hover:bg-red-50 cursor-pointer flex items-center gap-2" onclick="logout()"><i data-lucide="log-out" class="w-4 h-4"></i>Logout</div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="p-4 sm:p-6 lg:p-8" id="content"></main>
+  </div>
+
+  <!-- Mobile overlay -->
+  <div id="mob-o" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="closeMob()"></div>
+
+  <!-- Search overlay -->
+  <div id="sr-o" class="sr" onclick="closeSearch()">
+    <div class="sp" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+        <input type="text" id="si" class="flex-1 text-sm outline-none bg-transparent placeholder-slate-400" placeholder="Search houses, residents, complaints..." oninput="handleSearch(this.value)">
+        <kbd class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200 hidden sm:block">ESC</kbd>
+      </div>
+      <div id="s-r" class="max-h-96 overflow-y-auto p-2 text-sm text-slate-500 text-center py-8">Type to search...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Generic Modal -->
+<div id="modal" class="mo" onclick="closeModal(event)">
+  <div class="md" onclick="event.stopPropagation()" id="modal-box"></div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('vac_token') || '';
+let currentUser = JSON.parse(localStorage.getItem('vac_user')||'null');
+let collapsed = false;
+
+// --- helpers ---
+function toast(msg, type='info'){
+  const c=document.getElementById('tc');
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.textContent=msg;
+  c.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(10px)'; setTimeout(()=>el.remove(),300)},2600);
+}
+function api(path, opts={}){
+  opts.headers = opts.headers||{};
+  if(token) opts.headers['Authorization']='Bearer '+token;
+  if(opts.body && typeof opts.body==='object' && !(opts.body instanceof FormData)){
+    opts.headers['Content-Type']='application/json';
+    opts.body=JSON.stringify(opts.body);
+  }
+  return fetch(API+path, opts).then(async r=>{
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||'Request failed');
+    return j;
+  });
+}
+function fmtINR(n){ return '₹'+Number(n||0).toLocaleString('en-IN'); }
+function badge(text, cls){ return `<span class="badge ${cls}">${text}</span>`; }
+function statusBadge(s){
+  const m={ 'Paid':'bs-s','Partial':'bs-w','Pending':'bs-w','Open':'bs-d','Assigned':'bs-i','In Progress':'bs-w','Completed':'bs-s','Resolved':'bs-s','Closed':'bs-n','Upcoming':'bs-i','Active':'bs-s','Vacant':'bs-n','Occupied':'bs-s' };
+  return badge(s, m[s]||'bs-n');
+}
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// --- auth ---
+async function handleLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-error');
+  err.classList.add('hidden');
+  btn.disabled=true; btn.textContent='Signing in...';
+  try{
+    const res=await api('/api/auth/login',{method:'POST',body:{email,password}});
+    token=res.token; currentUser=res.user;
+    localStorage.setItem('vac_token',token);
+    localStorage.setItem('vac_user',JSON.stringify(currentUser));
+    toast('Welcome back, '+(currentUser.display_name||currentUser.username),'success');
+    initApp();
+  }catch(ex){
+    err.textContent=ex.message; err.classList.remove('hidden');
+  }finally{ btn.disabled=false; btn.textContent='Sign In'; }
+}
+function logout(){
+  localStorage.removeItem('vac_token'); localStorage.removeItem('vac_user');
+  token=''; currentUser=null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+  toast('Logged out','info');
+}
+async function checkAuth(){
+  if(!token) return false;
+  try{
+    const res=await api('/api/auth/me');
+    currentUser=res.user; // keep original plus resident/house
+    // merge display fields
+    const stored=JSON.parse(localStorage.getItem('vac_user')||'{}');
+    currentUser={...stored,...res.user};
+    localStorage.setItem('vac_user',JSON.stringify(currentUser));
+    return true;
+  }catch{ return false; }
+}
+
+// --- nav ---
+const NAV_ADMIN=[
+  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
+  {id:'houses',label:'Houses',icon:'home'},
+  {id:'residents',label:'Residents',icon:'users'},
+  {id:'payments',label:'Payments',icon:'wallet'},
+  {id:'complaints',label:'Complaints',icon:'message-square-warning'},
+  {id:'maintenance',label:'Maintenance',icon:'wrench'},
+  {id:'events',label:'Events',icon:'calendar-days'},
+  {id:'meetings',label:'Meetings',icon:'clipboard-list'},
+  {id:'committee',label:'Committee',icon:'shield-check'},
+  {id:'reports',label:'Reports',icon:'bar-chart-3'},
+  {id:'my-profile',label:'My Profile',icon:'user-round'},
+  {id:'settings',label:'Settings',icon:'settings'},
+];
+const NAV_COMMITTEE=[
+  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
+  {id:'events',label:'Events',icon:'calendar-days'},
+  {id:'meetings',label:'Meetings',icon:'clipboard-list'},
+  {id:'committee',label:'Committee',icon:'shield-check'},
+  {id:'payments',label:'Funds Overview',icon:'wallet'},
+  {id:'my-profile',label:'My Profile',icon:'user-round'},
+];
+const NAV_STAFF=[
+  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
+  {id:'maintenance',label:'Maintenance',icon:'wrench'},
+  {id:'complaints',label:'Complaints',icon:'message-square-warning'},
+  {id:'my-profile',label:'My Profile',icon:'user-round'},
+];
+const NAV_RESIDENT=[
+  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
+  {id:'my-profile',label:'My Profile',icon:'user-round'},
+  {id:'my-house',label:'My House',icon:'home'},
+  {id:'my-family',label:'Family Details',icon:'users-round'},
+  {id:'my-dues',label:'Fund Payment',icon:'circle-dollar-sign'},
+  {id:'my-payments',label:'My Payments',icon:'wallet'},
+  {id:'my-complaints',label:'My Complaints',icon:'message-square-warning'},
+  {id:'events',label:'Events',icon:'calendar-days'},
+  {id:'meetings',label:'Meetings',icon:'clipboard-list'},
+  {id:'committee',label:'Committee',icon:'shield-check'},
+  {id:'settings',label:'Settings',icon:'settings'},
+];
+
+function buildNav(){
+  const role=currentUser?.role||'resident';
+  const items=role==='admin'?NAV_ADMIN:role==='committee'?NAV_COMMITTEE:role==='staff'?NAV_STAFF:NAV_RESIDENT;
+  const prefix=role==='admin'?'admin':role==='resident'?'resident':role;
+  const activeRoute=getRoute().split('/').pop()||'dashboard';
+  const navEl=document.getElementById('sb-nav');
+  navEl.innerHTML=items.map(it=>`<div class="sl ${activeRoute===it.id?'active':''}" onclick="nav('${it.id}')"><i data-lucide="${it.icon}"></i><span>${it.label}</span></div>`).join('');
+  lucide.createIcons();
+  document.getElementById('sb-role').textContent=role==='admin'?'Admin Panel':role==='resident'?'Resident Panel':`${role.charAt(0).toUpperCase()+role.slice(1)} Panel`;
+  document.getElementById('h-name').textContent=currentUser?.display_name||currentUser?.username||'-';
+  document.getElementById('h-role').textContent=role.charAt(0).toUpperCase()+role.slice(1);
+  const av=document.getElementById('h-av');
+  av.textContent=(currentUser?.display_name||'A').charAt(0).toUpperCase();
+  // crumb
+  const cur=location.hash.slice(1)||'dashboard';
+  document.getElementById('crumb').textContent=cur.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+function nav(id){
+  const prefix=currentUser?.role==='admin'?'admin':currentUser?.role==='resident'?'resident':currentUser?.role||'resident';
+  history.pushState({},'',`/${prefix}/${id}`);
+  document.getElementById('pm')?.classList.add('hidden');
+  closeMob();
+  render();
+}
+function getRoute(){
+  const path=location.pathname.replace(/^\/+|\/+$/g,'');
+  return path.includes('/')?path:(location.hash.slice(1)||'');
+}
+window.addEventListener('hashchange', render);
+window.addEventListener('popstate', render);
+
+function toggleSB(){
+  collapsed=!collapsed;
+  const sb=document.getElementById('sidebar');
+  const main=document.getElementById('main-area');
+  if(collapsed){ sb.classList.add('sidebar-collapsed'); main.style.marginLeft='72px'; }
+  else { sb.classList.remove('sidebar-collapsed'); main.style.marginLeft='260px'; }
+}
+function openMob(){
+  document.getElementById('sidebar').style.transform='translateX(0)';
+  document.getElementById('mob-o').classList.remove('hidden');
+}
+function closeMob(){
+  if(window.innerWidth<1024){
+    document.getElementById('sidebar').style.transform='';
+    document.getElementById('mob-o').classList.add('hidden');
+  }
+}
+function toggleProfileMenu(e){
+  e.stopPropagation();
+  document.getElementById('pm').classList.toggle('hidden');
+  document.getElementById('n-dd').classList.add('hidden');
+}
+document.addEventListener('click',()=>{
+  document.getElementById('pm')?.classList.add('hidden');
+  document.getElementById('n-dd')?.classList.add('hidden');
+});
+
+// search & notifications
+function openSearch(){
+  document.getElementById('sr-o').classList.add('on');
+  setTimeout(()=>document.getElementById('si').focus(),80);
+}
+function closeSearch(){
+  document.getElementById('sr-o').classList.remove('on');
+}
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); openSearch(); }
+  if(e.key==='Escape'){ closeSearch(); closeModal(); }
+});
+async function handleSearch(q){
+  const box=document.getElementById('s-r');
+  if(!q.trim()){ box.innerHTML='<div class="text-center py-8 text-slate-400">Type to search...</div>'; return; }
+  box.innerHTML='<div class="text-center py-6 text-slate-400">Searching...</div>';
+  try{
+    const [houses,residents,complaints]=await Promise.all([
+      api('/api/houses?search='+encodeURIComponent(q)+'&limit=4').catch(()=>({data:[]})),
+      api('/api/residents?search='+encodeURIComponent(q)+'&limit=4').catch(()=>({data:[]})),
+      api('/api/complaints?search='+encodeURIComponent(q)+'&limit=4').catch(()=>({data:[]})),
+    ]);
+    let html='';
+    if(houses.data?.length) html+=`<p class="text-xs font-semibold text-slate-500 px-3 py-1.5">Houses</p>`+houses.data.map(h=>`<div class="px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer flex justify-between items-center" onclick="closeSearch();nav('houses')"><span class="font-medium text-slate-800">${escapeHtml(h.house_no)} — ${escapeHtml(h.block)} Block</span><span class="text-xs text-slate-400">${escapeHtml(h.occupancy)}</span></div>`).join('');
+    if(residents.data?.length) html+=`<p class="text-xs font-semibold text-slate-500 px-3 py-1.5 mt-2">Residents</p>`+residents.data.map(r=>`<div class="px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer" onclick="closeSearch();nav('residents')"><span class="font-medium text-slate-800">${escapeHtml(r.name)}</span><span class="text-xs text-slate-400 ml-2">${escapeHtml(r.roll_no)}</span></div>`).join('');
+    if(complaints.data?.length) html+=`<p class="text-xs font-semibold text-slate-500 px-3 py-1.5 mt-2">Complaints</p>`+complaints.data.map(c=>`<div class="px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer" onclick="closeSearch();nav('complaints')"><span class="font-medium text-slate-800">${escapeHtml(c.subject||c.complaint_no)}</span><span class="text-xs ml-2">${statusBadge(c.status)}</span></div>`).join('');
+    if(!html) html='<div class="text-center py-8 text-slate-400">No results found</div>';
+    box.innerHTML=html;
+  }catch{ box.innerHTML='<div class="text-center py-8 text-red-400">Search failed</div>'; }
+}
+async function togNotif(e){
+  if(e) e.stopPropagation();
+  const dd=document.getElementById('n-dd');
+  dd.classList.toggle('hidden');
+  document.getElementById('pm').classList.add('hidden');
+  if(dd.classList.contains('hidden')) return;
+  dd.innerHTML='<div class="p-6 text-center text-sm text-slate-400">Loading...</div>';
+  try{
+    const res=await api('/api/notifications?limit=10');
+    const list=res.data||res||[];
+    if(!list.length) dd.innerHTML='<div class="p-8 text-center text-sm text-slate-400">No notifications</div>';
+    else dd.innerHTML=`<div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p class="font-semibold text-sm">Notifications</p><button class="text-xs text-blue-600 hover:underline" onclick="markAllRead()">Mark all read</button></div>`+
+      list.map(n=>`<div class="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 flex gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.type==='success'?'bg-green-100 text-green-600':n.type==='warning'?'bg-amber-100 text-amber-600':'bg-blue-100 text-blue-600'}"><i data-lucide="${n.type==='success'?'check':n.type==='warning'?'alert-triangle':'bell'}" class="w-4 h-4"></i></div><div class="min-w-0"><p class="text-sm font-medium text-slate-800 truncate">${escapeHtml(n.title)}</p><p class="text-xs text-slate-500 line-clamp-2">${escapeHtml(n.message)}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(n.created_at).toLocaleString()}</p></div></div>`).join('')+
+      `<div class="p-2"><button class="w-full text-xs text-center text-slate-500 hover:text-slate-700 py-1.5" onclick="document.getElementById('n-dd').classList.add('hidden');nav('reports')">View all activity</button></div>`;
+    lucide.createIcons();
+    // badge count
+    const unread=list.filter(n=>!n.is_read).length;
+    const nb=document.getElementById('nb');
+    if(unread){ nb.textContent=unread; nb.classList.remove('hidden'); nb.classList.add('flex'); } else nb.classList.add('hidden');
+  }catch{
+    dd.innerHTML='<div class="p-6 text-center text-sm text-red-400">Failed to load</div>';
+  }
+}
+async function markAllRead(){
+  try{ await api('/api/notifications/mark-read',{method:'POST'}); toast('All marked as read','success'); document.getElementById('n-dd').classList.add('hidden'); loadNotifCount(); }catch(e){ toast(e.message,'error'); }
+}
+async function loadNotifCount(){
+  try{
+    const res=await api('/api/notifications?limit=20');
+    const list=res.data||res||[];
+    const unread=list.filter(n=>!n.is_read).length;
+    const nb=document.getElementById('nb');
+    if(unread>0){ nb.textContent=unread>9?'9+':unread; nb.classList.remove('hidden'); nb.classList.add('flex'); }
+    else nb.classList.add('hidden');
+  }catch{}
+}
+
+// --- modal ---
+function openModal(html){
+  document.getElementById('modal-box').innerHTML=html;
+  document.getElementById('modal').classList.add('on');
+  lucide.createIcons();
+}
+function closeModal(e){
+  if(e && e.target && !e.target.classList.contains('mo')) return;
+  document.getElementById('modal').classList.remove('on');
+}
+
+// --- render router ---
+async function render(){
+  const role=currentUser?.role||'resident';
+  const expectedPrefix=role==='admin'?'admin':role==='resident'?'resident':role;
+  const route=(getRoute()||`${expectedPrefix}/dashboard`).split('?')[0];
+  const routeParts=route.split('/');
+  if(routeParts.length<2 || routeParts[0]!==expectedPrefix){
+    history.replaceState({},'',`/${expectedPrefix}/dashboard`);
+    buildNav();
+    render();
+    return;
+  }
+  buildNav();
+  const id=routeParts[1]||'dashboard';
+  const content=document.getElementById('content');
+  content.innerHTML='<div class="flex items-center justify-center py-20"><div class="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div></div>';
+  try{
+    if(id==='dashboard') await renderDashboard();
+    else if(id==='houses') await renderHouses();
+    else if(id==='residents') await renderResidents();
+    else if(id==='payments' || id==='my-payments') await renderPayments(id==='my-payments');
+    else if(id==='complaints' || id==='my-complaints') await renderComplaints(id==='my-complaints');
+    else if(id==='maintenance') await renderMaintenance();
+    else if(id==='my-house') await renderMyHouse();
+    else if(id==='my-family') await renderFamily();
+    else if(id==='my-dues') await renderDues();
+    else if(id==='events') await renderEvents();
+    else if(id==='meetings') await renderMeetings();
+    else if(id==='committee') await renderCommittee();
+    else if(id==='reports') await renderReports();
+    else if(id==='my-profile') await renderProfile();
+    else if(id==='settings') renderSettings();
+    else content.innerHTML='<div class="kc text-center py-12"><i data-lucide="compass" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i><p class="font-semibold">Page not found</p><button class="btn bp mt-4" onclick="nav(\'dashboard\')">Go to Dashboard</button></div>';
+  }catch(ex){
+    content.innerHTML=`<div class="kc text-center py-12 border-red-200 bg-red-50/50"><p class="text-red-600 font-semibold">Failed to load</p><p class="text-sm text-red-500 mt-1">${escapeHtml(ex.message)}</p><button class="btn bs mt-4" onclick="render()">Retry</button></div>`;
+  }
+  lucide.createIcons();
+}
+
+// --- dashboard ---
+async function renderDashboard(){
+  const content=document.getElementById('content');
+  const kpis=await api('/api/dashboard/kpis');
+  const [fundTrend, maintStats, complaintStats, activity]=await Promise.all([
+    api('/api/dashboard/fund-trend').catch(()=>[]),
+    api('/api/dashboard/maintenance-stats').catch(()=>({})),
+    api('/api/dashboard/complaint-stats').catch(()=>({})),
+    api('/api/dashboard/recent-activity').catch(()=>({combined:[]})),
+  ]);
+  const isResident=currentUser.role==='resident';
+  content.innerHTML=`
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-xl font-bold text-slate-900">Dashboard</h1>
+        <p class="text-sm text-slate-500 mt-0.5">Welcome back, ${escapeHtml(currentUser.display_name||currentUser.username)} — ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn bs" onclick="render()"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Refresh</button>
+        ${currentUser.role==='admin'?'<button class="btn bp" onclick="nav(\'houses\')"><i data-lucide="plus" class="w-4 h-4"></i>Add House</button>':''}
+      </div>
+    </div>
+
+    ${isResident?`
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">My Due</p><p class="text-2xl font-bold mt-1">${fmtINR(kpis.myDue||0)}</p><p class="text-xs text-amber-600 mt-1">Pending maintenance</p></div>
+        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Last Payment</p><p class="text-2xl font-bold mt-1">${kpis.lastPayment?fmtINR(kpis.lastPayment.amount):'-'}</p><p class="text-xs text-slate-500 mt-1">${kpis.lastPayment?new Date(kpis.lastPayment.date).toLocaleDateString(): 'No payment yet'}</p></div>
+        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Open Issues</p><p class="text-2xl font-bold mt-1">${kpis.myOpenComplaints||0}</p><p class="text-xs text-slate-500 mt-1">${kpis.myMaintenance||0} maintenance open</p></div>
+      </div>
+    `:`
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Houses</p><p class="text-2xl font-bold mt-1">${kpis.totalHouses}</p><p class="text-xs text-slate-500 mt-1">${kpis.occupied} occupied · ${kpis.vacant} vacant</p></div><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600"><i data-lucide="home" class="w-5 h-5"></i></div></div></div>
+        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Residents</p><p class="text-2xl font-bold mt-1">${kpis.totalResidents}</p><p class="text-xs text-slate-500 mt-1">${kpis.totalFamilies} families</p></div><div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600"><i data-lucide="users" class="w-5 h-5"></i></div></div></div>
+        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Collection</p><p class="text-2xl font-bold mt-1">${fmtINR(kpis.totalCollected)}</p><p class="text-xs text-amber-600 mt-1">${kpis.pendingDues} dues · ${fmtINR(kpis.pendingAmount)} pending</p></div><div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600"><i data-lucide="wallet" class="w-5 h-5"></i></div></div></div>
+        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Complaints</p><p class="text-2xl font-bold mt-1">${kpis.openComplaints}</p><p class="text-xs text-red-500 mt-1">${kpis.highPriority} high priority</p></div><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div></div></div>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600"><i data-lucide="building" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">BHK 1 / 2 / 3</p><p class="font-semibold text-sm">${kpis.bhk1} · ${kpis.bhk2} · ${kpis.bhk3}</p></div></div>
+        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><i data-lucide="wrench" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Maintenance Open</p><p class="font-semibold text-sm">${kpis.openMaintenance}</p></div></div>
+        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><i data-lucide="calendar-days" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Upcoming Events</p><p class="font-semibold text-sm">${kpis.monthlyEvents}</p></div></div>
+        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600"><i data-lucide="clipboard-list" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Meetings</p><p class="font-semibold text-sm">${kpis.upcomingMeetings} upcoming</p></div></div>
+      </div>
+    `}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="kc lg:col-span-2">
+        <div class="flex items-center justify-between mb-4"><h3 class="font-semibold text-sm">Fund Trend (Collected vs Pending)</h3><span class="text-xs text-slate-400">Last 6 months</span></div>
+        <div class="h-[260px]"><canvas id="fundChart"></canvas></div>
+      </div>
+      <div class="space-y-6">
+        <div class="kc">
+          <h3 class="font-semibold text-sm mb-3">Maintenance by Status</h3>
+          <div class="space-y-2.5">
+            ${['Open','Assigned','In Progress','Completed'].map(k=>{
+              const val=maintStats[k.toLowerCase().replace(' ','')]||maintStats[k]||0;
+              const total=Math.max(1,(maintStats.open||0)+(maintStats.assigned||0)+(maintStats.inProgress||0)+(maintStats.completed||0));
+              const pct=Math.round(val/total*100);
+              const color=k==='Completed'?'bg-green-500':k==='In Progress'?'bg-amber-500':k==='Assigned'?'bg-blue-500':'bg-red-500';
+              return `<div><div class="flex justify-between text-xs mb-1"><span class="font-medium text-slate-700">${k}</span><span class="text-slate-500">${val} (${pct}%)</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${pct}%"></div></div></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="kc">
+          <h3 class="font-semibold text-sm mb-3">Recent Activity</h3>
+          <div class="space-y-3">
+            ${(activity.combined||[]).slice(0,5).map(a=>`<div class="flex gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div><div class="min-w-0"><p class="text-xs font-medium text-slate-800 leading-tight">${escapeHtml(a.title)}</p><p class="text-xs text-slate-500 truncate">${escapeHtml(a.desc||'')}</p><p class="text-[11px] text-slate-400">${a.timestamp?new Date(a.timestamp).toLocaleString():''}</p></div></div>`).join('') || '<p class="text-xs text-slate-400">No recent activity</p>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+  // chart
+  setTimeout(()=>{
+    const ctx=document.getElementById('fundChart');
+    if(!ctx) return;
+    const rows=Array.isArray(fundTrend)?fundTrend:[];
+    const labels=rows.map(r=>r.month);
+    const collected=rows.map(r=>Number(r.collected||0));
+    const pending=rows.map(r=>Number(r.pending||0));
+    if(!rows.length){
+      ctx.parentElement.innerHTML='<div class="h-full flex flex-col items-center justify-center text-center text-slate-400"><i data-lucide="chart-no-axes-combined" class="w-8 h-8 mb-2"></i><p class="text-sm font-medium">No payment trend yet</p><p class="text-xs mt-1">Recorded payments will appear here.</p></div>';
+      lucide.createIcons();
+      return;
+    }
+    new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'Collected',data:collected,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.08)',fill:true,tension:.4,pointRadius:3},
+      {label:'Pending',data:pending,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.06)',fill:true,tension:.4,pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}} ,scales:{y:{ticks:{callback:v=>'₹'+(v/1000)+'k'},grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}});
+  },80);
+}
+
+// --- houses ---
+async function renderHouses(page=1, search=''){
+  const content=document.getElementById('content');
+  const q=new URLSearchParams({page,limit:10,search});
+  const res=await api('/api/houses?'+q.toString());
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">Houses</h1><p class="text-sm text-slate-500">${res.total} houses total</p></div>
+      <div class="flex gap-2">
+        <div class="relative"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="houseSearch" value="${escapeHtml(search)}" onkeydown="if(event.key==='Enter')renderHouses(1,this.value)" placeholder="Search house no, resident..." class="in pl-9 w-64 py-2 text-sm"></div>
+        <button class="btn bs" onclick="renderHouses(1,document.getElementById('houseSearch').value)"><i data-lucide="search" class="w-4 h-4"></i></button>
+        ${currentUser.role==='admin'?'<button class="btn bp" onclick="openHouseModal()"><i data-lucide="plus" class="w-4 h-4"></i>Add House</button>':''}
+      </div>
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>House No</th><th>Block / Floor</th><th>BHK</th><th>Occupancy</th><th>Resident</th><th>Due</th><th>Status</th><th></th></tr></thead>
+      <tbody>${res.data.map(h=>`<tr>
+        <td class="font-semibold text-slate-900">${escapeHtml(h.house_no)}</td>
+        <td><span class="font-medium">${escapeHtml(h.block)}</span> <span class="text-slate-400">· Floor ${h.floor}</span></td>
+        <td>${h.bhk} BHK</td>
+        <td>${statusBadge(h.occupancy)}</td>
+        <td class="max-w-[160px] truncate">${escapeHtml(h.resident_name||'-')} ${h.resident_phone?`<span class="text-xs text-slate-400 block">${escapeHtml(h.resident_phone)}</span>`:''}</td>
+        <td class="${h.pendingDue>0?'text-amber-600 font-semibold':'text-slate-600'}">${fmtINR(h.pendingDue||0)}</td>
+        <td>${statusBadge(h.status)}</td>
+        <td class="text-right"><button class="btn bs bx" onclick="viewHouse(${h.id})">View</button></td>
+      </tr>`).join('')||`<tr><td colspan="8" class="text-center py-10 text-slate-400">No houses found</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+        <p class="text-xs text-slate-500">Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))} · ${res.total} records</p>
+        <div class="flex gap-2">
+          <button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderHouses(${res.page-1},'${escapeHtml(search).replace(/'/g,"\\'")}')">Prev</button>
+          <button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderHouses(${res.page+1},'${escapeHtml(search).replace(/'/g,"\\'")}')">Next</button>
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+async function viewHouse(id){
+  const res=await api('/api/houses/'+id);
+  const h=res.house;
+  openModal(`
+    <div class="p-6">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div><h3 class="text-lg font-bold">${escapeHtml(h.house_no)} <span class="text-slate-400 font-normal">· Block ${escapeHtml(h.block)}</span></h3><p class="text-sm text-slate-500">Floor ${h.floor} · ${h.bhk} BHK · ${escapeHtml(h.occupancy)} · ${escapeHtml(h.status)}</p></div>
+        <button class="p-2 hover:bg-slate-100 rounded-lg" onclick="closeModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">Monthly Due</p><p class="font-bold text-sm mt-1">${fmtINR(h.monthly_due)}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">Occupancy</p><p class="font-semibold text-sm mt-1">${escapeHtml(h.occupancy)}</p></div>
+      </div>
+      <h4 class="font-semibold text-sm mb-2">Family Members (${res.family.length})</h4>
+      <div class="border border-slate-200 rounded-xl overflow-hidden mb-4">
+        ${res.family.length?res.family.map(m=>`<div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 last:border-0"><div><p class="text-sm font-medium">${escapeHtml(m.name)}</p><p class="text-xs text-slate-500">${escapeHtml(m.relation)} · ${escapeHtml(m.type)} · ${escapeHtml(m.phone||'-')}</p></div><span class="text-xs">${statusBadge(m.status)}</span></div>`).join(''):'<p class="p-4 text-sm text-slate-400 text-center">No family members</p>'}
+      </div>
+      ${res.payments.length?`<h4 class="font-semibold text-sm mb-2">Recent Payments</h4><div class="space-y-1 mb-4">${res.payments.slice(0,3).map(p=>`<div class="flex justify-between text-sm px-3 py-2 bg-slate-50 rounded-lg"><span>${escapeHtml(p.transaction_id)} · ${p.date}</span><span class="font-semibold">${fmtINR(p.amount)} ${statusBadge(p.status)}</span></div>`).join('')}</div>`:''}
+      <div class="flex gap-2 justify-end">
+        <button class="btn bs" onclick="closeModal()">Close</button>
+        ${currentUser.role==='admin'?`<button class="btn bp" onclick="openHouseModal(${h.id})">Edit</button>`:''}
+      </div>
+    </div>`);
+}
+function openHouseModal(id=null){
+  const isEdit=!!id;
+  openModal(`
+    <div class="p-6">
+      <h3 class="text-base font-bold mb-4">${isEdit?'Edit House':'Add New House'}</h3>
+      <form onsubmit="submitHouse(event,${id||'null'})" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">House No *</label><input name="house_no" required placeholder="e.g. A-105" class="in"></div>
+          <div><label class="fl">Block *</label><select name="block" class="in"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div><label class="fl">Floor</label><input name="floor" type="number" value="1" class="in"></div>
+          <div><label class="fl">BHK</label><select name="bhk" class="in"><option value="1">1 BHK</option><option value="2" selected>2 BHK</option><option value="3">3 BHK</option></select></div>
+          <div><label class="fl">Occupancy</label><select name="occupancy" class="in"><option>Vacant</option><option>Occupied</option></select></div>
+        </div>
+        <div><label class="fl">Monthly Due (₹)</label><input name="monthly_due" type="number" value="2500" class="in"></div>
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">${isEdit?'Update':'Create'} House</button>
+        </div>
+      </form>
+    </div>`);
+  if(isEdit){ api('/api/houses/'+id).then(r=>{ const h=r.house; const f=document.querySelector('#modal-box form'); if(f){ f.house_no.value=h.house_no; f.block.value=h.block; f.floor.value=h.floor; f.bhk.value=h.bhk; f.occupancy.value=h.occupancy; f.monthly_due.value=h.monthly_due; } }); }
+}
+async function submitHouse(e, id){
+  e.preventDefault();
+  const fd=new FormData(e.target);
+  const body=Object.fromEntries(fd.entries());
+  body.floor=parseInt(body.floor); body.bhk=parseInt(body.bhk); body.monthly_due=parseInt(body.monthly_due);
+  try{
+    if(id) await api('/api/houses/'+id,{method:'PUT',body});
+    else await api('/api/houses',{method:'POST',body});
+    toast(id?'House updated':'House created','success');
+    closeModal(); renderHouses();
+  }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- residents ---
+async function renderResidents(page=1, search=''){
+  const res=await api('/api/residents?page='+page+'&limit=10&search='+encodeURIComponent(search));
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">Residents</h1><p class="text-sm text-slate-500">${res.total} residents</p></div>
+      <div class="flex gap-2">
+        <div class="relative"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="resSearch" value="${escapeHtml(search)}" onkeydown="if(event.key==='Enter')renderResidents(1,this.value)" placeholder="Search name, roll no..." class="in pl-9 w-64 py-2 text-sm"></div>
+        <button class="btn bs" onclick="renderResidents(1,document.getElementById('resSearch').value)"><i data-lucide="search" class="w-4 h-4"></i></button>
+        ${currentUser.role==='admin'?'<button class="btn bp" onclick="openResidentModal()"><i data-lucide="plus" class="w-4 h-4"></i>Add Resident</button>':''}
+      </div>
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>Roll No</th><th>Name</th><th>House</th><th>Relation</th><th>Phone</th><th>Type</th><th>Status</th><th></th></tr></thead>
+      <tbody>${res.data.map(r=>`<tr>
+        <td class="font-mono text-xs">${escapeHtml(r.roll_no)}</td>
+        <td><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">${escapeHtml(r.name.charAt(0))}</div><div><p class="font-medium text-slate-900 leading-none">${escapeHtml(r.name)}</p><p class="text-xs text-slate-400">${escapeHtml(r.email||'')}</p></div></div></td>
+        <td>${escapeHtml(r.house_no||'-')} <span class="text-xs text-slate-400">${escapeHtml(r.block||'')}</span></td>
+        <td class="text-xs">${escapeHtml(r.relation||'Self')}</td>
+        <td class="text-xs">${escapeHtml(r.phone||'-')}</td>
+        <td><span class="badge ${r.type==='Owner'?'bs-i':r.type==='Tenant'?'bs-w':'bs-n'} text-[11px]">${escapeHtml(r.type||'-')}</span></td>
+        <td>${statusBadge(r.status)}</td>
+        <td class="text-right"><button class="btn bs bx" onclick="viewResident(${r.id})">View</button></td>
+      </tr>`).join('')||`<tr><td colspan="8" class="text-center py-10 text-slate-400">No residents found</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+        <p class="text-xs text-slate-500">Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))}</p>
+        <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderResidents(${res.page-1},'${escapeHtml(search).replace(/'/g,"\\'")}')">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderResidents(${res.page+1},'${escapeHtml(search).replace(/'/g,"\\'")}')">Next</button></div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+async function viewResident(id){
+  const res=await api('/api/residents/'+id);
+  const r=res.resident;
+  openModal(`
+    <div class="p-6">
+      <div class="flex gap-4 mb-4">
+        <div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-lg font-bold">${escapeHtml(r.name.charAt(0))}</div>
+        <div class="flex-1"><h3 class="font-bold text-base">${escapeHtml(r.name)}</h3><p class="text-xs text-slate-500">${escapeHtml(r.roll_no)} · ${escapeHtml(r.house_no||'No house')} · ${escapeHtml(r.type)}</p><p class="text-xs text-slate-500">${escapeHtml(r.email||'')} ${r.phone?'· '+escapeHtml(r.phone):''}</p></div>
+        <button onclick="closeModal()" class="p-2 hover:bg-slate-100 rounded-lg h-fit"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-slate-500 font-semibold uppercase text-[10px]">DOB / Gender</p><p class="font-medium mt-1">${escapeHtml(r.dob||'-')} · ${escapeHtml(r.gender||'-')}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-slate-500 font-semibold uppercase text-[10px]">Address</p><p class="font-medium mt-1 truncate">${escapeHtml(r.address||'-')}, ${escapeHtml(r.city||'')}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-slate-500 font-semibold uppercase text-[10px]">Emergency</p><p class="font-medium mt-1">${escapeHtml(r.emergency_name||'-')} ${r.emergency_phone? '· '+escapeHtml(r.emergency_phone):''}</p></div>
+        <div class="bg-slate-50 rounded-xl p-3"><p class="text-slate-500 font-semibold uppercase text-[10px]">House</p><p class="font-medium mt-1">${escapeHtml(r.house_no||'-')} Block ${escapeHtml(r.block||'-')} Floor ${r.floor||'-'}</p></div>
+      </div>
+      ${res.family?.length?`<div class="mb-4"><p class="font-semibold text-xs mb-2">Family in same house (${res.family.length})</p><div class="flex flex-wrap gap-1.5">${res.family.map(f=>`<span class="badge bs-n">${escapeHtml(f.name)} · ${escapeHtml(f.relation)}</span>`).join('')}</div></div>`:''}
+      <div class="flex justify-end gap-2">
+        <button class="btn bs" onclick="closeModal()">Close</button>
+        <button class="btn bp" onclick="closeModal();openResidentModal(${r.id})">Edit</button>
+      </div>
+    </div>`);
+}
+function openResidentModal(id=null){
+  const isEdit=!!id;
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">${isEdit?'Edit Resident':'Add Resident'}</h3>
+      <form onsubmit="submitResident(event,${id||'null'})" class="space-y-3">
+        <div><label class="fl">Full Name *</label><input name="name" required class="in" placeholder="Enter name"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Phone</label><input name="phone" class="in" placeholder="9876543210"></div>
+          <div><label class="fl">Email</label><input name="email" type="email" class="in" placeholder="email@example.com"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">House ID (optional)</label><input name="house_id" type="number" class="in" placeholder="e.g. 1"></div>
+          <div><label class="fl">Type</label><select name="type" class="in"><option>Owner</option><option>Tenant</option><option>Dependent</option></select></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Relation</label><select name="relation" class="in"><option>Self</option><option>Spouse</option><option>Son</option><option>Daughter</option><option>Parent</option></select></div>
+          <div><label class="fl">Gender</label><select name="gender" class="in"><option>Male</option><option>Female</option><option>Other</option></select></div>
+        </div>
+        <div><label class="fl">DOB</label><input name="dob" type="date" class="in"></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">${isEdit?'Update':'Create'}</button>
+        </div>
+      </form>
+    </div>`);
+  if(isEdit) api('/api/residents/'+id).then(r=>{ const v=r.resident; const f=document.querySelector('#modal-box form'); if(f){ f.name.value=v.name; f.phone.value=v.phone||''; f.email.value=v.email||''; f.house_id.value=v.house_id||''; f.type.value=v.type||'Owner'; f.relation.value=v.relation||'Self'; f.gender.value=v.gender||'Male'; f.dob.value=v.dob||''; } });
+}
+async function submitResident(e,id){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  if(body.house_id) body.house_id=parseInt(body.house_id); else delete body.house_id;
+  try{
+    if(id) await api('/api/residents/'+id,{method:'PUT',body});
+    else await api('/api/residents',{method:'POST',body});
+    toast(id?'Resident updated':'Resident created','success'); closeModal(); renderResidents();
+  }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- payments ---
+async function renderPayments(mine=false, page=1){
+  const res=await api('/api/payments?page='+page+'&limit=10');
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">${mine?'My Payments':'Payments'}</h1><p class="text-sm text-slate-500">${res.total} transactions</p></div>
+      ${currentUser.role==='admin'?'<button class="btn bp" onclick="openPaymentModal()"><i data-lucide="plus" class="w-4 h-4"></i>Record Payment</button>':''}
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>Txn ID</th><th>House / Resident</th><th>Amount</th><th>Date</th><th>Method</th><th>Status</th><th>Receipt</th></tr></thead>
+      <tbody>${res.data.map(p=>`<tr>
+        <td class="font-mono text-xs font-semibold">${escapeHtml(p.transaction_id)}</td>
+        <td><span class="font-medium">${escapeHtml(p.house_no||'-')}</span> <span class="text-xs text-slate-500">${escapeHtml(p.resident_name||'')}</span></td>
+        <td class="font-semibold">${fmtINR(p.amount)}</td>
+        <td class="text-xs">${escapeHtml(p.date||'')}</td>
+        <td class="text-xs">${escapeHtml(p.method||'-')}</td>
+        <td>${statusBadge(p.status)}</td>
+        <td class="text-xs font-mono">${escapeHtml(p.receipt_no||'-')}</td>
+      </tr>`).join('')||`<tr><td colspan="7" class="text-center py-10 text-slate-400">No payments yet</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+        <p class="text-xs text-slate-500">Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))}</p>
+        <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderPayments(${mine},${res.page-1})">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderPayments(${mine},${res.page+1})">Next</button></div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+function openPaymentModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">Record Payment</h3>
+      <form onsubmit="submitPayment(event)" class="space-y-3">
+        ${currentUser.role==='admin'?`<div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">House ID *</label><input name="house_id" type="number" required class="in" placeholder="e.g. 1"></div>
+          <div><label class="fl">Resident ID *</label><input name="resident_id" type="number" required class="in" placeholder="e.g. 1"></div>
+        </div>`:''}
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Amount (₹) *</label><input name="amount" type="number" required value="2500" class="in"></div>
+          <div><label class="fl">Method</label><select name="method" class="in"><option>UPI</option><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Pending</option></select></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Date</label><input name="date" type="date" value="${new Date().toISOString().slice(0,10)}" class="in"></div>
+          <div><label class="fl">Status</label><select name="status" class="in"><option>Paid</option><option>Pending</option><option>Partial</option></select></div>
+        </div>
+        <div><label class="fl">Notes</label><input name="notes" class="in" placeholder="Monthly maintenance"></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">Record</button>
+        </div>
+      </form>
+    </div>`);
+}
+async function submitPayment(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  body.house_id=parseInt(body.house_id); body.resident_id=parseInt(body.resident_id); body.amount=parseInt(body.amount);
+  try{ await api('/api/payments',{method:'POST',body}); toast('Payment recorded','success'); closeModal(); renderPayments(); }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- complaints ---
+async function renderComplaints(mine=false, page=1){
+  const res=await api('/api/complaints?page='+page+'&limit=10');
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">${mine?'My Complaints':'Complaints'}</h1><p class="text-sm text-slate-500">${res.total} complaints</p></div>
+      <button class="btn bp" onclick="openComplaintModal()"><i data-lucide="plus" class="w-4 h-4"></i>New Complaint</button>
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>No</th><th>Subject</th><th>House</th><th>Priority</th><th>Status</th><th>Assigned</th><th></th></tr></thead>
+      <tbody>${res.data.map(c=>`<tr>
+        <td class="font-mono text-xs">${escapeHtml(c.complaint_no)}</td>
+        <td><p class="font-medium text-slate-900 line-clamp-1">${escapeHtml(c.subject)}</p><p class="text-xs text-slate-500 line-clamp-1">${escapeHtml(c.category||'')}</p></td>
+        <td class="text-xs">${escapeHtml(c.house_id||'-')}</td>
+        <td><span class="badge ${c.priority==='High'?'bs-d':c.priority==='Medium'?'bs-w':'bs-n'}">${escapeHtml(c.priority||'-')}</span></td>
+        <td>${statusBadge(c.status)}</td>
+        <td class="text-xs">${escapeHtml(c.assigned_to||'-')}</td>
+        <td class="text-right"><button class="btn bs bx" onclick="viewComplaint(${c.id})">View</button></td>
+      </tr>`).join('')||`<tr><td colspan="7" class="text-center py-10 text-slate-400">No complaints</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <span>Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))}</span>
+        <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderComplaints(${mine},${res.page-1})">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderComplaints(${mine},${res.page+1})">Next</button></div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+async function viewComplaint(id){
+  const res=await api('/api/complaints/'+id);
+  const c=res.complaint;
+  openModal(`
+    <div class="p-6">
+      <div class="flex justify-between items-start gap-4 mb-3">
+        <div><h3 class="font-bold">${escapeHtml(c.subject)}</h3><p class="text-xs text-slate-500">${escapeHtml(c.complaint_no)} · ${escapeHtml(c.category||'')} · ${statusBadge(c.status)} <span class="badge ${c.priority==='High'?'bs-d':c.priority==='Medium'?'bs-w':'bs-n'} ml-1">${escapeHtml(c.priority)}</span></p></div>
+        <button onclick="closeModal()" class="p-1.5 hover:bg-slate-100 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 mb-4">${escapeHtml(c.description||'No description')}</p>
+      <div class="text-xs text-slate-500 mb-3">House: ${escapeHtml(c.house_id||'-')} · Assigned: ${escapeHtml(c.assigned_to||'Unassigned')} · ${new Date(c.created_at).toLocaleString()}</div>
+      <div class="border border-slate-200 rounded-xl max-h-48 overflow-y-auto mb-3 divide-y divide-slate-100">
+        ${(res.comments||[]).map(cm=>`<div class="px-3 py-2.5"><p class="text-xs font-semibold">${escapeHtml(cm.author)} <span class="text-[10px] font-normal text-slate-400">${escapeHtml(cm.role||'')} · ${new Date(cm.created_at).toLocaleString()}</span></p><p class="text-sm text-slate-700 mt-0.5">${escapeHtml(cm.message)}</p></div>`).join('')||'<p class="p-4 text-center text-xs text-slate-400">No comments yet</p>'}
+      </div>
+      <form onsubmit="addComplaintComment(event,${c.id})" class="flex gap-2">
+        <input name="message" required placeholder="Add a comment..." class="in flex-1 py-2 text-sm">
+        <button type="submit" class="btn bp">Send</button>
+      </form>
+      ${currentUser.role==='admin'?`<div class="flex gap-2 mt-3"><select id="complaintStatus" class="in text-xs py-1.5"><option ${c.status==='Open'?'selected':''}>Open</option><option ${c.status==='Assigned'?'selected':''}>Assigned</option><option ${c.status==='In Progress'?'selected':''}>In Progress</option><option ${c.status==='Resolved'?'selected':''}>Resolved</option><option ${c.status==='Closed'?'selected':''}>Closed</option></select><button class="btn bs bx" onclick="updateComplaintStatus(${c.id})">Update Status</button></div>`:''}
+    </div>`);
+  lucide.createIcons();
+}
+async function addComplaintComment(e, id){
+  e.preventDefault();
+  const msg=e.target.message.value.trim(); if(!msg) return;
+  try{ await api('/api/complaints/'+id+'/comments',{method:'POST',body:{message:msg}}); toast('Comment added','success'); viewComplaint(id); }catch(ex){ toast(ex.message,'error'); }
+}
+async function updateComplaintStatus(id){
+  const status=document.getElementById('complaintStatus').value;
+  try{ await api('/api/complaints/'+id,{method:'PUT',body:{status}}); toast('Status updated','success'); viewComplaint(id); renderComplaints(); }catch(ex){ toast(ex.message,'error'); }
+}
+function openComplaintModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">New Complaint</h3>
+      <form onsubmit="submitComplaint(event)" class="space-y-3">
+        <div><label class="fl">Subject *</label><input name="subject" required class="in" placeholder="e.g. Water Leakage"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Category</label><select name="category" class="in"><option>Plumbing</option><option>Electrical</option><option>Housekeeping</option><option>Security</option><option>Noise</option><option>Other</option></select></div>
+          <div><label class="fl">Priority</label><select name="priority" class="in"><option>Low</option><option>Medium</option><option>High</option></select></div>
+        </div>
+        <div><label class="fl">Description</label><textarea name="description" rows="3" class="in" placeholder="Describe the issue..."></textarea></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">Submit</button>
+        </div>
+      </form>
+    </div>`);
+}
+async function submitComplaint(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  try{ await api('/api/complaints',{method:'POST',body}); toast('Complaint submitted','success'); closeModal(); renderComplaints(); }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- maintenance ---
+async function renderMaintenance(page=1){
+  const res=await api('/api/maintenance?page='+page+'&limit=10');
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">Maintenance</h1><p class="text-sm text-slate-500">${res.total} tickets</p></div>
+      ${currentUser.role==='admin'?'<button class="btn bp" onclick="openMaintModal()"><i data-lucide="plus" class="w-4 h-4"></i>New Ticket</button>':''}
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>Ticket</th><th>Category</th><th>Location</th><th>Priority</th><th>Status</th><th>Cost</th><th>Due</th></tr></thead>
+      <tbody>${res.data.map(t=>`<tr>
+        <td class="font-mono text-xs font-semibold">${escapeHtml(t.ticket_no)}</td>
+        <td class="text-xs">${escapeHtml(t.category)}</td>
+        <td class="text-xs max-w-[180px] truncate">${escapeHtml(t.location||'-')}</td>
+        <td><span class="badge ${t.priority==='High'?'bs-d':t.priority==='Medium'?'bs-w':'bs-n'}">${escapeHtml(t.priority)}</span></td>
+        <td>${statusBadge(t.status)}</td>
+        <td class="font-medium text-xs">${fmtINR(t.cost||0)}</td>
+        <td class="text-xs">${escapeHtml(t.due_date||'-')}</td>
+      </tr>`).join('')||`<tr><td colspan="7" class="text-center py-10 text-slate-400">No tickets</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <span>Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))}</span>
+        <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderMaintenance(${res.page-1})">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderMaintenance(${res.page+1})">Next</button></div>
+      </div>
+    </div>`;
+}
+function openMaintModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">New Maintenance Ticket</h3>
+      <form onsubmit="submitMaint(event)" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Category *</label><select name="category" class="in"><option>Electrical</option><option>Plumbing</option><option>Lift</option><option>Cleaning</option><option>Security</option><option>Other</option></select></div>
+          <div><label class="fl">Priority</label><select name="priority" class="in"><option>Low</option><option>Medium</option><option>High</option></select></div>
+        </div>
+        <div><label class="fl">Location *</label><input name="location" required class="in" placeholder="e.g. Block A - Terrace"></div>
+        <div><label class="fl">Description</label><textarea name="description" rows="2" class="in" placeholder="Describe..."></textarea></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Due Date</label><input name="due_date" type="date" class="in"></div>
+          <div><label class="fl">Cost (₹)</label><input name="cost" type="number" value="0" class="in"></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">Create</button>
+        </div>
+      </form>
+    </div>`);
+}
+async function submitMaint(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  body.cost=parseInt(body.cost||0);
+  try{ await api('/api/maintenance',{method:'POST',body}); toast('Ticket created','success'); closeModal(); renderMaintenance(); }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- my house (resident) ---
+async function renderMyHouse(){
+  const content=document.getElementById('content');
+  try{
+    const me=await api('/api/auth/me');
+    const houseId=me.resident?.house_id;
+    if(!houseId){ content.innerHTML='<div class="kc text-center py-12 text-slate-500">No house assigned to your profile</div>'; return; }
+    const res=await api('/api/houses/'+houseId);
+    const h=res.house;
+    content.innerHTML=`
+      <h1 class="text-xl font-bold mb-1">My House</h1><p class="text-sm text-slate-500 mb-6">${escapeHtml(h.house_no)} · Block ${escapeHtml(h.block)} · Floor ${h.floor} · ${h.bhk} BHK</p>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="kc">
+            <h3 class="font-semibold text-sm mb-3">House Details</h3>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">House No</p><p class="font-bold">${escapeHtml(h.house_no)}</p></div>
+              <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">Block / Floor</p><p class="font-bold">${escapeHtml(h.block)} / ${h.floor}</p></div>
+              <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">BHK</p><p class="font-bold">${h.bhk} BHK</p></div>
+              <div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-semibold text-slate-500 uppercase">Monthly Due</p><p class="font-bold">${fmtINR(h.monthly_due)}</p></div>
+            </div>
+          </div>
+          <div class="kc">
+            <h3 class="font-semibold text-sm mb-3">Family Members (${res.family.length})</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              ${res.family.map(m=>`<div class="border border-slate-200 rounded-xl p-3 flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs">${escapeHtml(m.name.charAt(0))}</div><div><p class="text-sm font-medium leading-none">${escapeHtml(m.name)}</p><p class="text-xs text-slate-500">${escapeHtml(m.relation)} · ${escapeHtml(m.type)}</p></div></div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="space-y-6">
+          <div class="kc">
+            <h3 class="font-semibold text-sm mb-3">Pending Due</h3>
+            <p class="text-2xl font-bold text-amber-600">${fmtINR(res.payments.filter(p=>p.status==='Pending').reduce((s,p)=>s+Number(p.amount||0),0) || 0)}</p>
+            <p class="text-xs text-slate-500 mt-1">Based on pending payments</p>
+          </div>
+          <div class="kc">
+            <h3 class="font-semibold text-sm mb-3">Recent Payments</h3>
+            <div class="space-y-2">${res.payments.slice(0,4).map(p=>`<div class="flex justify-between text-xs bg-slate-50 rounded-lg px-3 py-2"><span>${escapeHtml(p.transaction_id)}</span><span class="font-semibold">${fmtINR(p.amount)}</span></div>`).join('')||'<p class="text-xs text-slate-400">No payments</p>'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }catch(ex){ content.innerHTML=`<div class="kc text-center py-12 text-red-500">${escapeHtml(ex.message)}</div>`; }
+}
+
+async function renderFamily(){
+  const content=document.getElementById('content');
+  const me=await api('/api/auth/me');
+  if(!me.resident?.house_id){ content.innerHTML='<div class="kc text-center py-12 text-slate-500">No house is linked to your profile.</div>'; return; }
+  const res=await api('/api/houses/'+me.resident.house_id);
+  content.innerHTML=`<div class="flex items-start justify-between gap-4 mb-6"><div><h1 class="text-xl font-bold">Family Details</h1><p class="text-sm text-slate-500 mt-1">People registered with house ${escapeHtml(res.house.house_no)}</p></div><button class="btn bs" onclick="nav('my-house')"><i data-lucide="arrow-left" class="w-4 h-4"></i>My House</button></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${res.family.map(member=>`<div class="kc"><div class="flex items-center gap-3"><div class="av bg-blue-600">${escapeHtml(member.name.charAt(0).toUpperCase())}</div><div><p class="font-semibold text-sm">${escapeHtml(member.name)}</p><p class="text-xs text-slate-500">${escapeHtml(member.relation||'Family member')} · ${escapeHtml(member.type||'Resident')}</p></div></div><div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500"><p>Roll No. <span class="font-medium text-slate-700">${escapeHtml(member.roll_no)}</span></p><p class="mt-1">Contact <span class="font-medium text-slate-700">${escapeHtml(member.phone||'Not shared')}</span></p></div></div>`).join('')||'<div class="kc text-center py-12 text-slate-400">No family members found.</div>'}</div>`;
+  lucide.createIcons();
+}
+
+async function renderDues(){
+  const content=document.getElementById('content');
+  const [me,payments]=await Promise.all([api('/api/auth/me'),api('/api/payments?limit=100')]);
+  const pending=(payments.data||[]).filter(payment=>payment.status==='Pending').reduce((total,payment)=>total+Number(payment.amount||0),0);
+  const paid=(payments.data||[]).filter(payment=>payment.status==='Paid').reduce((total,payment)=>total+Number(payment.amount||0),0);
+  content.innerHTML=`<div class="mb-6"><h1 class="text-xl font-bold">Fund Payment</h1><p class="text-sm text-slate-500 mt-1">Review your apartment dues and submit a payment for verification.</p></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6"><div class="kc lg:col-span-2 bg-slate-900 text-white border-slate-900"><p class="text-xs font-semibold uppercase tracking-wide text-slate-300">Current Due</p><p class="text-4xl font-bold mt-2">${fmtINR(pending)}</p><p class="text-sm text-slate-300 mt-2">Monthly maintenance for ${escapeHtml(me.house?.house_no||'your house')}</p><button class="btn bg-white text-slate-900 mt-5" onclick="openPaymentModal()"><i data-lucide="arrow-up-right" class="w-4 h-4"></i>Submit Payment</button></div><div class="kc"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Paid to date</p><p class="text-2xl font-bold mt-2">${fmtINR(paid)}</p><p class="text-xs text-slate-500 mt-2">${payments.total} payment records</p></div></div><div class="kc"><h3 class="font-semibold text-sm mb-3">Payment workflow</h3><div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs"><div class="p-3 rounded-lg bg-blue-50 text-blue-800"><b>1. Submit</b><br>Choose your payment method.</div><div class="p-3 rounded-lg bg-amber-50 text-amber-800"><b>2. Verification</b><br>Admin reviews the payment.</div><div class="p-3 rounded-lg bg-green-50 text-green-800"><b>3. Ledger</b><br>Approved payments are posted.</div></div></div>`;
+  lucide.createIcons();
+}
+
+// --- events ---
+async function renderEvents(page=1){
+  const res=await api('/api/events?page='+page+'&limit=10');
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">Events</h1><p class="text-sm text-slate-500">${res.total} events</p></div>
+      ${currentUser.role==='admin'?'<button class="btn bp" onclick="openEventModal()"><i data-lucide="plus" class="w-4 h-4"></i>New Event</button>':''}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${res.data.map(ev=>`<div class="kc">
+        <div class="flex items-start justify-between gap-3 mb-2">
+          <h3 class="font-semibold text-sm leading-tight">${escapeHtml(ev.name)}</h3>
+          ${statusBadge(ev.status)}
+        </div>
+        <p class="text-xs text-slate-500 mb-3">${escapeHtml(ev.description||'')}</p>
+        <div class="space-y-1.5 text-xs text-slate-600">
+          <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>${escapeHtml(ev.date)} ${escapeHtml(ev.time||'')}</div>
+          <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>${escapeHtml(ev.venue||'-')}</div>
+          <div class="flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>${escapeHtml(ev.organizer||'-')}</div>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <div class="flex-1 bg-slate-50 rounded-lg px-3 py-2"><p class="text-[10px] font-semibold text-slate-500 uppercase">Budget</p><p class="text-sm font-bold">${fmtINR(ev.budget)}</p></div>
+          <div class="flex-1 bg-green-50 rounded-lg px-3 py-2"><p class="text-[10px] font-semibold text-green-700 uppercase">Collected</p><p class="text-sm font-bold text-green-700">${fmtINR(ev.fund_collected)}</p></div>
+        </div>
+      </div>`).join('')||'<div class="col-span-2 kc text-center py-12 text-slate-400">No events yet</div>'}
+    </div>
+    <div class="flex items-center justify-between mt-6 text-xs text-slate-500">
+      <span>Page ${res.page} of ${Math.max(1,Math.ceil(res.total/res.limit))}</span>
+      <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderEvents(${res.page-1})">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderEvents(${res.page+1})">Next</button></div>
+    </div>`;
+  lucide.createIcons();
+}
+function openEventModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">New Event</h3>
+      <form onsubmit="submitEvent(event)" class="space-y-3">
+        <div><label class="fl">Event Name *</label><input name="name" required class="in" placeholder="e.g. Diwali Celebration"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Date *</label><input name="date" type="date" required class="in"></div>
+          <div><label class="fl">Time</label><input name="time" class="in" placeholder="07:00 PM"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Venue</label><input name="venue" class="in" placeholder="Terrace Garden"></div>
+          <div><label class="fl">Organizer</label><input name="organizer" class="in" placeholder="Cultural Committee"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Budget (₹)</label><input name="budget" type="number" value="0" class="in"></div>
+          <div><label class="fl">Status</label><select name="status" class="in"><option>Upcoming</option><option>Completed</option><option>Cancelled</option></select></div>
+        </div>
+        <div><label class="fl">Description</label><textarea name="description" rows="2" class="in"></textarea></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">Create</button>
+        </div>
+      </form>
+    </div>`);
+}
+async function submitEvent(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  body.budget=parseInt(body.budget||0);
+  try{ await api('/api/events',{method:'POST',body}); toast('Event created','success'); closeModal(); renderEvents(); }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- meetings ---
+async function renderMeetings(page=1){
+  const res=await api('/api/meetings?page='+page+'&limit=10');
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 class="text-xl font-bold">Meetings</h1><p class="text-sm text-slate-500">${res.total} meetings</p></div>
+      ${currentUser.role==='admin'?'<button class="btn bp" onclick="openMeetingModal()"><i data-lucide="plus" class="w-4 h-4"></i>New Meeting</button>':''}
+    </div>
+    <div class="kc p-0 overflow-hidden">
+      <div class="overflow-x-auto"><table><thead><tr><th>Title</th><th>Date / Time</th><th>Venue</th><th>Minutes</th><th>Status</th></tr></thead>
+      <tbody>${res.data.map(m=>`<tr>
+        <td><p class="font-medium text-slate-900">${escapeHtml(m.title)}</p><p class="text-xs text-slate-500 line-clamp-1">${escapeHtml(m.agenda||'')}</p></td>
+        <td class="text-xs">${escapeHtml(m.date)}<br><span class="text-slate-400">${escapeHtml(m.time||'')}</span></td>
+        <td class="text-xs">${escapeHtml(m.venue||'-')}</td>
+        <td>${statusBadge(m.minutes_status||'Pending')}</td>
+        <td>${statusBadge(m.status)}</td>
+      </tr>`).join('')||`<tr><td colspan="5" class="text-center py-10 text-slate-400">No meetings</td></tr>`}
+      </tbody></table></div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <span>Page ${res.page}</span>
+        <div class="flex gap-2"><button class="btn bs bx" ${res.page<=1?'disabled':''} onclick="renderMeetings(${res.page-1})">Prev</button><button class="btn bs bx" ${res.page*res.limit>=res.total?'disabled':''} onclick="renderMeetings(${res.page+1})">Next</button></div>
+      </div>
+    </div>`;
+}
+function openMeetingModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold mb-4">New Meeting</h3>
+      <form onsubmit="submitMeeting(event)" class="space-y-3">
+        <div><label class="fl">Title *</label><input name="title" required class="in" placeholder="Monthly Committee Meeting"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="fl">Date *</label><input name="date" type="date" required class="in"></div>
+          <div><label class="fl">Time</label><input name="time" class="in" placeholder="06:00 PM"></div>
+        </div>
+        <div><label class="fl">Venue</label><input name="venue" class="in" placeholder="Community Hall"></div>
+        <div><label class="fl">Agenda</label><textarea name="agenda" rows="2" class="in" placeholder="Agenda..."></textarea></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn bp">Create</button>
+        </div>
+      </form>
+    </div>`);
+}
+async function submitMeeting(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  try{ await api('/api/meetings',{method:'POST',body}); toast('Meeting created','success'); closeModal(); renderMeetings(); }catch(ex){ toast(ex.message,'error'); }
+}
+
+// --- committee ---
+async function renderCommittee(){
+  const res=await api('/api/committee').catch(()=>({data:[]}));
+  const list=res.data||res||[];
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <h1 class="text-xl font-bold mb-1">Committee Members</h1><p class="text-sm text-slate-500 mb-6">Managing committee for Vijay Apartment</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${list.map(m=>`<div class="kc text-center">
+        <div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">${escapeHtml(m.name.charAt(0))}</div>
+        <h3 class="font-semibold text-sm">${escapeHtml(m.name)}</h3>
+        <p class="text-xs text-blue-600 font-medium">${escapeHtml(m.role)}</p>
+        <p class="text-xs text-slate-500 mt-1">Block ${escapeHtml(m.block||'-')} · ${escapeHtml(m.term||'')}</p>
+        <p class="text-xs text-slate-500 mt-2">${escapeHtml(m.phone||'')} ${m.email?'<br>'+escapeHtml(m.email):''}</p>
+      </div>`).join('')||'<div class="col-span-3 kc text-center py-12 text-slate-400">No committee members</div>'}
+    </div>`;
+}
+
+// --- reports ---
+async function renderReports(){
+  const content=document.getElementById('content');
+  const kpis=await api('/api/dashboard/kpis');
+  content.innerHTML=`
+    <h1 class="text-xl font-bold mb-1">Reports & Analytics</h1><p class="text-sm text-slate-500 mb-6">Overview of apartment performance</p>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="kc"><p class="text-xs text-slate-500 font-semibold uppercase">Collection Rate</p><p class="text-xl font-bold mt-1">${kpis.totalCollected?Math.round(kpis.totalCollected/(kpis.totalCollected+Number(kpis.pendingAmount||0))*100):0}%</p><div class="h-1.5 bg-slate-100 rounded-full mt-2"><div class="h-full bg-green-500 rounded-full" style="width:${kpis.totalCollected?Math.round(kpis.totalCollected/(kpis.totalCollected+Number(kpis.pendingAmount||1))*100):0}%"></div></div></div>
+      <div class="kc"><p class="text-xs text-slate-500 font-semibold uppercase">Occupancy</p><p class="text-xl font-bold mt-1">${kpis.totalHouses?Math.round(kpis.occupied/kpis.totalHouses*100):0}%</p><p class="text-xs text-slate-500">${kpis.occupied}/${kpis.totalHouses} houses</p></div>
+      <div class="kc"><p class="text-xs text-slate-500 font-semibold uppercase">Open Complaints</p><p class="text-xl font-bold mt-1 text-red-600">${kpis.openComplaints||0}</p><p class="text-xs text-slate-500">Requires attention</p></div>
+      <div class="kc"><p class="text-xs text-slate-500 font-semibold uppercase">Maintenance</p><p class="text-xl font-bold mt-1">${kpis.openMaintenance||0} open</p><p class="text-xs text-slate-500">Active tickets</p></div>
+    </div>
+    <div class="kc">
+      <h3 class="font-semibold text-sm mb-3">Quick Exports</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        ${['houses','payments','complaints','maintenance'].map(t=>`<button class="btn bs justify-center" onclick="exportData('${t}')"><i data-lucide="download" class="w-4 h-4"></i>${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+      </div>
+      <pre id="exportBox" class="hidden mt-4 bg-slate-900 text-slate-100 text-xs p-4 rounded-xl overflow-x-auto max-h-64"></pre>
+    </div>`;
+  lucide.createIcons();
+}
+async function exportData(type){
+  const box=document.getElementById('exportBox');
+  box.classList.remove('hidden'); box.textContent='Loading...';
+  try{ const res=await api('/api/export/'+type); box.textContent=JSON.stringify(res,null,2); toast('Export ready','success'); }catch(ex){ box.textContent=ex.message; toast(ex.message,'error'); }
+}
+
+// --- profile & settings ---
+async function renderProfile(){
+  const res=await api('/api/auth/me');
+  const u=res.user; const r=res.resident;
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    <h1 class="text-xl font-bold mb-6">My Profile</h1>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="kc text-center h-fit">
+        <div class="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">${escapeHtml((u.display_name||u.username).charAt(0).toUpperCase())}</div>
+        <h3 class="font-bold">${escapeHtml(u.display_name||u.username)}</h3>
+        <p class="text-sm text-slate-500">${escapeHtml(u.email)}</p>
+        <p class="text-xs mt-1">${statusBadge(u.role)} ${r?escapeHtml(r.roll_no):''}</p>
+        <div class="mt-4 text-left text-xs space-y-1.5 border-t border-slate-100 pt-4">
+          <div class="flex justify-between"><span class="text-slate-500">Username</span><span class="font-medium">${escapeHtml(u.username)}</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">User ID</span><span class="font-medium">${escapeHtml(r?.roll_no||u.username)}</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Phone</span><span class="font-medium">${escapeHtml(u.phone||'-')}</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Role</span><span class="font-medium">${escapeHtml(u.role)}</span></div>
+          ${r?`<div class="flex justify-between"><span class="text-slate-500">House</span><span class="font-medium">${escapeHtml(res.house?.house_no||'-')}</span></div>`:''}
+        </div>
+      </div>
+      <div class="lg:col-span-2 kc">
+        <h3 class="font-semibold text-sm mb-4">Edit Profile</h3>
+        <form onsubmit="submitProfile(event)" class="space-y-3">
+          <div><label class="fl">Display Name</label><input name="display_name" value="${escapeHtml(u.display_name||'')}" class="in"></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="fl">Email</label><input name="email" value="${escapeHtml(u.email||'')}" class="in"></div>
+            <div><label class="fl">Phone</label><input name="phone" value="${escapeHtml(u.phone||'')}" class="in"></div>
+          </div>
+          ${r?`<div class="grid grid-cols-2 gap-3">
+            <div><label class="fl">Emergency Name</label><input name="emergency_name" value="${escapeHtml(r.emergency_name||'')}" class="in"></div>
+            <div><label class="fl">Emergency Phone</label><input name="emergency_phone" value="${escapeHtml(r.emergency_phone||'')}" class="in"></div>
+          </div>`:''}
+          <div class="flex justify-end pt-2"><button type="submit" class="btn bp">Save Changes</button></div>
+        </form>
+      </div>
+    </div>`;
+}
+async function submitProfile(e){
+  e.preventDefault();
+  const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  try{
+    if(currentUser.resident_id){
+      await api('/api/residents/'+currentUser.resident_id,{method:'PUT',body:{name:body.display_name, phone:body.phone, email:body.email, emergency_name:body.emergency_name, emergency_phone:body.emergency_phone}});
+    } else {
+      await api('/api/users/'+currentUser.id,{method:'PUT',body:{display_name:body.display_name, phone:body.phone}});
+    }
+    toast('Profile updated','success');
+    const me=await api('/api/auth/me');
+    currentUser={...currentUser,...me.user};
+    localStorage.setItem('vac_user',JSON.stringify(currentUser));
+    buildNav();
+  }catch(ex){ toast(ex.message,'error'); }
+}
+function renderSettings(){
+  document.getElementById('content').innerHTML=`
+    <h1 class="text-xl font-bold mb-6">Settings</h1>
+    <div class="kc max-w-2xl">
+      <h3 class="font-semibold text-sm mb-4">Apartment Settings</h3>
+      <div class="space-y-4 text-sm">
+        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-slate-600">Apartment Name</span><span class="font-semibold">Vijay Apartment</span></div>
+        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-slate-600">Address</span><span class="font-medium text-right max-w-[60%]">MG Road, Bengaluru, Karnataka 560001</span></div>
+        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-slate-600">Maintenance Amount</span><span class="font-semibold">₹2,500 / month</span></div>
+        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-slate-600">Currency</span><span class="font-semibold">INR (₹)</span></div>
+        <div class="flex items-center justify-between py-2"><span class="text-slate-600">Blocks</span><span class="font-semibold">A, B, C, D</span></div>
+      </div>
+      <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+        <p class="text-sm font-semibold text-amber-800 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i>Note</p>
+        <p class="text-xs text-amber-700 mt-1">Settings are managed by the administrator. Contact admin for changes.</p>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+// --- init ---
+async function initApp(){
+  const ok=await checkAuth();
+  if(!ok){
+    document.getElementById('login-page').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    lucide.createIcons();
+    return;
+  }
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  const prefix=currentUser.role==='admin'?'admin':currentUser.role==='resident'?'resident':currentUser.role;
+  if(!getRoute().startsWith(`${prefix}/`)) history.replaceState({},'',`/${prefix}/dashboard`);
+  buildNav();
+  render();
+  loadNotifCount();
+  lucide.createIcons();
+}
+
+// boot
+lucide.createIcons();
+initApp();
+</script>
+</body>
+</html>

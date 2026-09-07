@@ -62,45 +62,187 @@ tr:hover td{background:#f8fafc}
 .sidebar-collapsed #sb-brand,.sidebar-collapsed .sl span,.sidebar-collapsed #sb-role{display:none}
 button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:2px}
 @media(max-width:1023px){#sidebar{transform:translateX(-100%);box-shadow:12px 0 30px rgba(15,23,42,.12)}#main-area{margin-left:0!important}.sidebar-collapsed{width:260px!important}.sidebar-collapsed #sb-brand,.sidebar-collapsed .sl span,.sidebar-collapsed #sb-role{display:block}}
+.auth-panel{transition:opacity .28s ease,transform .28s ease}
+.auth-panel.hidden{ display:none !important; }
+.auth-panel.active{opacity:1;transform:translateY(0) scale(1)}
+.auth-panel.enter{opacity:0;transform:translateY(8px) scale(.985)}
 @media(max-width:640px){.kc{padding:16px}.in{font-size:16px}.btn{min-height:42px}.md{max-height:92vh}.sr{padding-top:5vh}table{min-width:680px}}
 </style>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0}
+[data-theme='dark']{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--muted:#94a3b8;--border:#334155}
+[data-theme='dark'] body{background:#0f172a!important;color:var(--text)}
+[data-theme='dark'] .kc,[data-theme='dark'] #sidebar,[data-theme='dark'] header,[data-theme='dark'] .md,[data-theme='dark'] .sp{background:var(--card)!important;border-color:var(--border)!important;color:var(--text)}
+[data-theme='dark'] .in{background:#0f172a!important;border-color:#334155!important;color:#f1f5f9}
+[data-theme='dark'] th{background:#0f172a;color:#94a3b8}
+[data-theme='dark'] td{border-color:#1e293b}
+[data-theme='dark'] #auth-page{background:#0f172a!important}
+[data-theme='dark'] #auth-page header{background:#1e293b!important;border-color:#334155!important}
+[data-theme='dark'] #auth-page .bg-white{background:#1e293b!important;border-color:#334155!important}
+[data-theme='dark'] #auth-page h1,[data-theme='dark'] #auth-page .text-slate-900{color:#f1f5f9!important}
+[data-theme='dark'] #auth-page .text-slate-500{color:#94a3b8!important}
+[data-theme='dark'] #auth-page .bg-slate-100{background:#334155!important}
+[data-theme='dark'] #auth-page .border-slate-200{border-color:#334155!important}
+</style>
+
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
-<!-- Toast -->
 <div id="tc" class="tc"></div>
 
-<!-- Login Page -->
-<div id="login-page" class="lp">
-  <div class="bg-white rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-slate-100">
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-200">
-        <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
+<button id="themeToggle" onclick="toggleTheme()" class="fixed bottom-4 right-4 z-50 w-11 h-11 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-600 hover:bg-slate-50" title="Toggle theme" aria-label="Toggle theme">
+  <i data-lucide="moon" class="w-5 h-5" id="themeIcon"></i>
+</button>
+
+<!-- UNIFIED AUTH PAGE — Resident first, Admin on demand -->
+<div id="auth-page" class="hidden min-h-screen flex flex-col" style="background:#f1f5f9">
+  <!-- simple header -->
+  <header class="bg-white border-b border-slate-200 px-5 sm:px-8 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+        <i data-lucide="building-2" class="w-6 h-6 text-white"></i>
       </div>
-      <h1 class="text-xl font-bold text-slate-900">Vijay Apartment Care</h1>
-      <p class="text-sm text-slate-500 mt-1">Apartment Maintenance Management System</p>
+      <div>
+        <p class="font-bold text-slate-900 text-[15px] leading-none tracking-tight">Vijay Apartment Care</p>
+        <p class="text-xs text-slate-500">Apartment Maintenance Management System</p>
+      </div>
     </div>
-    <div id="login-error" class="hidden bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 border border-red-100"></div>
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="mb-4">
-        <label class="fl">Email or Username</label>
-        <input type="text" id="login-email" class="in" placeholder="admin@vijayapartment.com" required value="admin@vijayapartment.com">
+    <div class="hidden sm:flex items-center gap-2.5 text-xs text-slate-500">
+      <span class="hidden md:inline">Secure &bull; Role-based &bull; Encrypted</span>
+      <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> System Online
+    </div>
+  </header>
+
+  <!-- centered card -->
+  <div class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-[1060px] bg-white rounded-[28px] border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,.08)] overflow-hidden flex flex-col lg:flex-row min-h-[560px] lg:min-h-[580px]">
+      <!-- LEFT visual -->
+      <div class="relative w-full lg:w-[46%] min-h-[260px] sm:min-h-[300px] lg:min-h-0 flex flex-col justify-end p-7 sm:p-10 overflow-hidden" style="background: url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;">
+        <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15,23,42,.12) 0%, rgba(15,23,42,.18) 30%, rgba(15,23,42,.68) 100%);"></div>
+        <div class="absolute inset-0 opacity-20" style="background: radial-gradient(600px 400px at 30% 20%, rgba(255,255,255,.35), transparent 60%);"></div>
+        <div class="relative z-10">
+          <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 text-xs font-medium text-white mb-4">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> Vijay Apartment — Bengaluru
+          </div>
+          <h2 class="text-[32px] sm:text-[36px] font-bold text-white leading-none tracking-tight">Welcome Home</h2>
+          <p class="text-white/90 text-sm sm:text-[15px] leading-relaxed mt-3 max-w-[340px]">Manage your apartment, family and community services in one place.</p>
+          <div class="hidden sm:flex items-center gap-3 mt-6 text-white/80 text-xs">
+            <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4"></i> Secure</span>
+            <span class="w-1 h-1 bg-white/40 rounded-full"></span>
+            <span class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> Community</span>
+            <span class="w-1 h-1 bg-white/40 rounded-full"></span>
+            <span class="flex items-center gap-1.5"><i data-lucide="wallet" class="w-4 h-4"></i> Payments</span>
+          </div>
+        </div>
+        <!-- subtle bottom branding -->
+        <p class="relative z-10 hidden lg:block text-xs text-white/60 mt-8">Trusted by 12+ houses · 30+ residents · 24/7 support</p>
       </div>
-      <div class="mb-6">
-        <label class="fl">Password</label>
-        <input type="password" id="login-password" class="in" placeholder="Enter password" required value="admin123">
+
+      <!-- RIGHT form area -->
+      <div class="w-full lg:w-[54%] flex flex-col px-6 sm:px-9 lg:px-10 py-8 sm:py-9 bg-white relative overflow-hidden">
+        <!-- subtle top brand + role badge -->
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div class="flex items-center gap-3">
+            <div id="auth-logo" class="w-11 h-11 rounded-xl flex items-center justify-center shadow-sm" style="background:#2563eb">
+              <i data-lucide="home" class="w-6 h-6 text-white" id="auth-logo-icon"></i>
+            </div>
+            <div>
+              <p class="font-bold text-slate-900 text-[15px] leading-none">Vijay Apartment Care</p>
+              <p class="text-xs text-slate-500 mt-0.5">Apartment Maintenance Management System</p>
+            </div>
+          </div>
+          <span id="auth-badge" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-blue-50 text-blue-700 border-blue-100">
+            <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Resident Portal
+          </span>
+        </div>
+
+        <!-- RESIDENT PANEL -->
+        <div id="resident-panel" class="auth-panel active">
+          <h1 class="text-[26px] sm:text-[28px] font-bold text-slate-900 tracking-tight leading-none">Resident Login</h1>
+          <p class="text-sm text-slate-500 mt-2 leading-relaxed">Access your apartment, payments, maintenance, complaints and community services.</p>
+          <div class="h-px bg-slate-100 my-5"></div>
+          <div id="resident-login-error" class="hidden rounded-xl px-4 py-3 text-sm mb-4 border"></div>
+          <form id="resident-login-form" onsubmit="handleResidentLogin(event)" novalidate class="space-y-4">
+            <div>
+              <label class="fl" for="resident-email">Email / Username <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="mail" class="w-4 h-4"></i></span>
+                <input type="text" id="resident-email" name="email" class="in pl-10 pr-3 !rounded-xl !py-3" placeholder="priya.sharma@example.com" required autocomplete="username" aria-required="true">
+              </div>
+              <p class="text-xs text-red-500 mt-1.5 hidden" id="resident-email-err"></p>
+            </div>
+            <div>
+              <label class="fl" for="resident-password">Password <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="lock" class="w-4 h-4"></i></span>
+                <input type="password" id="resident-password" name="password" class="in pl-10 pr-11 !rounded-xl !py-3" placeholder="Enter your password" required autocomplete="current-password" aria-required="true">
+                <button type="button" onclick="togglePw('resident-password','resident-eye')" class="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-50" aria-label="Toggle password visibility"><i data-lucide="eye" id="resident-eye" class="w-4 h-4"></i></button>
+              </div>
+              <p class="text-xs text-red-500 mt-1.5 hidden" id="resident-pass-err"></p>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none"><input type="checkbox" id="resident-remember" class="w-[18px] h-[18px] rounded-md border-slate-300 text-blue-600 focus:ring-blue-500"> Remember me</label>
+              <button type="button" onclick="openForgot('resident')" class="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">Forgot password?</button>
+            </div>
+            <button type="submit" id="resident-login-btn" class="btn bp w-full !rounded-xl !py-3.5 text-[14px] font-semibold shadow-[0_8px_20px_rgba(37,99,235,.25)] hover:shadow-[0_10px_24px_rgba(37,99,235,.3)]">Login</button>
+          </form>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="h-px flex-1 bg-slate-100"></div>
+            <span class="text-xs text-slate-400">Are you an administrator?</span>
+            <div class="h-px flex-1 bg-slate-100"></div>
+          </div>
+          <div class="mt-4 text-center">
+            <button onclick="goAdminLogin()" class="text-sm font-semibold text-slate-700 hover:text-slate-900 inline-flex items-center gap-1.5 group">Admin / Management Login <span class="group-hover:translate-x-0.5 transition-transform">→</span></button>
+          </div>
+          <div class="mt-6 bg-blue-50/70 rounded-xl px-3.5 py-3 border border-blue-100 text-xs text-slate-600 leading-relaxed">Demo: <b class="text-slate-800">priya.sharma@example.com / resident123</b> <span class="text-slate-400">·</span> <b class="text-slate-800">arjun.mehra@example.com / resident123</b></div>
+        </div>
+
+        <!-- ADMIN PANEL (hidden by default) -->
+        <div id="admin-panel" class="auth-panel hidden">
+          <button onclick="goResidentLogin()" class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 mb-3 -ml-1">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Resident Login
+          </button>
+          <h1 class="text-[26px] sm:text-[28px] font-bold text-slate-900 tracking-tight leading-none">Admin / Management Login</h1>
+          <p class="text-sm text-slate-500 mt-2 leading-relaxed">Authorized management personnel only. Secure access to houses, funds, complaints and reports.</p>
+          <div class="h-px bg-slate-100 my-5"></div>
+          <div id="admin-login-error" class="hidden rounded-xl px-4 py-3 text-sm mb-4 border"></div>
+          <form id="admin-login-form" onsubmit="handleAdminLogin(event)" novalidate class="space-y-4">
+            <div>
+              <label class="fl" for="admin-email">Admin Email / Username <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="shield" class="w-4 h-4"></i></span>
+                <input type="text" id="admin-email" name="email" class="in pl-10 pr-3 !rounded-xl !py-3" placeholder="admin@vijayapartment.com" required autocomplete="username" aria-required="true">
+              </div>
+              <p class="text-xs text-red-500 mt-1.5 hidden" id="admin-email-err"></p>
+            </div>
+            <div>
+              <label class="fl" for="admin-password">Password <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="lock" class="w-4 h-4"></i></span>
+                <input type="password" id="admin-password" name="password" class="in pl-10 pr-11 !rounded-xl !py-3" placeholder="Enter admin password" required autocomplete="current-password" aria-required="true">
+                <button type="button" onclick="togglePw('admin-password','admin-eye')" class="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-50" aria-label="Toggle password visibility"><i data-lucide="eye" id="admin-eye" class="w-4 h-4"></i></button>
+              </div>
+              <p class="text-xs text-red-500 mt-1.5 hidden" id="admin-pass-err"></p>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none"><input type="checkbox" id="admin-remember" class="w-[18px] h-[18px] rounded-md border-slate-300 text-blue-600 focus:ring-blue-500"> Remember me</label>
+              <button type="button" onclick="openForgot('admin')" class="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">Forgot password?</button>
+            </div>
+            <button type="submit" id="admin-login-btn" class="btn w-full !rounded-xl !py-3.5 text-[14px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-[0_8px_20px_rgba(15,23,42,.18)]">Login as Admin</button>
+          </form>
+          <div class="mt-5 text-center text-xs text-slate-500">Not an administrator? <button onclick="goResidentLogin()" class="font-semibold text-blue-600 hover:underline">Back to Resident Login</button></div>
+          <div class="mt-4 bg-slate-50 rounded-xl px-3.5 py-3 border border-slate-200 text-xs text-slate-500 leading-relaxed">Demo: <b class="text-slate-800">admin@vijayapartment.com / admin123</b> <span class="text-slate-400">·</span> committee / staff</div>
+        </div>
+
+        <!-- footer help -->
+        <p class="text-center text-xs text-slate-400 mt-6">Need help? Contact <b class="text-slate-600">admin@vijayapartment.com</b></p>
       </div>
-      <button type="submit" class="btn bp w-full py-3 text-sm" id="login-btn">Sign In</button>
-    </form>
-    <div class="mt-6 bg-slate-50 rounded-xl p-3 border border-slate-100">
-      <p class="text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Demo Accounts</p>
-      <p class="text-xs text-slate-500 leading-relaxed">
-        <b class="text-slate-700">Admin:</b> admin@vijayapartment.com / admin123<br>
-        <b class="text-slate-700">Resident:</b> priya.sharma@example.com / resident123<br>
-        <b class="text-slate-700">Resident:</b> vikram.singh@example.com / resident123
-      </p>
     </div>
   </div>
 </div>
+<!-- keep hidden old containers for JS compatibility (never shown) -->
+<div id="login-selector" class="hidden"></div>
+<div id="admin-login-page" class="hidden"></div>
+<div id="resident-login-page" class="hidden"></div>
 
 <!-- App Shell -->
 <div id="app" class="hidden">
@@ -184,32 +326,108 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid 
   <div class="md" onclick="event.stopPropagation()" id="modal-box"></div>
 </div>
 
+
+<!-- FORGOT PASSWORD MODAL -->
+<div id="forgot-modal" class="mo" onclick="closeForgot(event)">
+  <div class="md" onclick="event.stopPropagation()">
+    <div class="p-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-base font-bold">Reset your password</h3>
+          <p class="text-sm text-slate-500 mt-1">We'll generate a secure reset token for your email.</p>
+        </div>
+        <button onclick="document.getElementById('forgot-modal').classList.remove('on')" class="p-1.5 hover:bg-slate-100 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="forgot-msg" class="hidden rounded-xl px-4 py-3 text-sm mb-4 border"></div>
+      <form id="forgot-step1" onsubmit="submitForgotStep1(event)" class="space-y-3">
+        <div>
+          <label class="fl" for="forgot-email">Email</label>
+          <input id="forgot-email" type="email" required class="in" placeholder="you@example.com">
+        </div>
+        <button type="submit" id="forgot-step1-btn" class="btn bp w-full">Send reset link</button>
+        <p class="text-xs text-slate-400 text-center">Token expires in 1 hour. Demo mode shows token directly.</p>
+      </form>
+      <form id="forgot-step2" onsubmit="submitForgotStep2(event)" class="space-y-3 hidden">
+        <div>
+          <label class="fl" for="forgot-token">Reset Token</label>
+          <input id="forgot-token" class="in font-mono text-xs" placeholder="Paste reset token" required>
+        </div>
+        <div>
+          <label class="fl" for="forgot-newpass">New Password (min 6 chars)</label>
+          <input id="forgot-newpass" type="password" class="in" required minlength="6" placeholder="New password">
+        </div>
+        <button type="submit" id="forgot-step2-btn" class="btn bp w-full">Reset password</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = '';
-let token = localStorage.getItem('vac_token') || '';
-let currentUser = JSON.parse(localStorage.getItem('vac_user')||'null');
-let collapsed = false;
-
-// --- helpers ---
+let collapsed=false;
+let currentUser=null;
+let token=null;
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('vac_theme', t);
+  const ic=document.getElementById('themeIcon');
+  if(ic) ic.setAttribute('data-lucide', t==='dark'?'sun':'moon');
+  if(window.lucide) lucide.createIcons();
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  applyTheme(cur==='dark'?'light':'dark');
+}
+(function(){ applyTheme(localStorage.getItem('vac_theme')||'light'); })();
+function getToken(){
+  return sessionStorage.getItem('vac_token') || localStorage.getItem('vac_token') || '';
+}
+function getUser(){
+  try{ return JSON.parse(sessionStorage.getItem('vac_user')||localStorage.getItem('vac_user')||'null'); }catch{ return null; }
+}
+function setAuth(tok, user, remember){
+  token=tok; currentUser=user;
+  if(remember){
+    localStorage.setItem('vac_token',tok); localStorage.setItem('vac_user',JSON.stringify(user));
+    sessionStorage.removeItem('vac_token'); sessionStorage.removeItem('vac_user');
+  } else {
+    sessionStorage.setItem('vac_token',tok); sessionStorage.setItem('vac_user',JSON.stringify(user));
+    localStorage.removeItem('vac_token'); localStorage.removeItem('vac_user');
+  }
+}
+function clearAuth(){
+  token=null; currentUser=null;
+  localStorage.removeItem('vac_token'); localStorage.removeItem('vac_user');
+  sessionStorage.removeItem('vac_token'); sessionStorage.removeItem('vac_user');
+}
+(function initAuth(){ token=getToken(); currentUser=getUser(); })();
 function toast(msg, type='info'){
   const c=document.getElementById('tc');
   const el=document.createElement('div');
   el.className='toast '+type;
   el.textContent=msg;
   c.appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(10px)'; setTimeout(()=>el.remove(),300)},2600);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(10px)'; setTimeout(()=>el.remove(),300)},3200);
 }
 function api(path, opts={}){
   opts.headers = opts.headers||{};
-  if(token) opts.headers['Authorization']='Bearer '+token;
+  const tk=getToken();
+  if(tk) opts.headers['Authorization']='Bearer '+tk;
   if(opts.body && typeof opts.body==='object' && !(opts.body instanceof FormData)){
     opts.headers['Content-Type']='application/json';
     opts.body=JSON.stringify(opts.body);
   }
   return fetch(API+path, opts).then(async r=>{
     const j = await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(j.error||'Request failed');
+    if(!r.ok){
+      const err=new Error(j.error||'Request failed');
+      err.code=j.code; err.status=r.status;
+      throw err;
+    }
     return j;
+  }).catch(e=>{
+    if(e.message && e.message.includes('Failed to fetch')) throw new Error('Unable to connect to the server. Please try again.');
+    throw e;
   });
 }
 function fmtINR(n){ return '₹'+Number(n||0).toLocaleString('en-IN'); }
@@ -219,48 +437,267 @@ function statusBadge(s){
   return badge(s, m[s]||'bs-n');
 }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-// --- auth ---
-async function handleLogin(e){
-  e.preventDefault();
-  const email=document.getElementById('login-email').value.trim();
-  const password=document.getElementById('login-password').value;
-  const btn=document.getElementById('login-btn');
-  const err=document.getElementById('login-error');
-  err.classList.add('hidden');
-  btn.disabled=true; btn.textContent='Signing in...';
-  try{
-    const res=await api('/api/auth/login',{method:'POST',body:{email,password}});
-    token=res.token; currentUser=res.user;
-    localStorage.setItem('vac_token',token);
-    localStorage.setItem('vac_user',JSON.stringify(currentUser));
-    toast('Welcome back, '+(currentUser.display_name||currentUser.username),'success');
-    initApp();
-  }catch(ex){
-    err.textContent=ex.message; err.classList.remove('hidden');
-  }finally{ btn.disabled=false; btn.textContent='Sign In'; }
+function togglePw(inputId, iconId){
+  const inp=document.getElementById(inputId);
+  const ic=document.getElementById(iconId);
+  if(!inp) return;
+  const isText=inp.type==='text';
+  inp.type=isText?'password':'text';
+  if(ic) ic.setAttribute('data-lucide', isText?'eye':'eye-off');
+  lucide.createIcons();
 }
-function logout(){
-  localStorage.removeItem('vac_token'); localStorage.removeItem('vac_user');
-  token=''; currentUser=null;
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('login-page').classList.remove('hidden');
-  toast('Logged out','info');
+function validateEmailFormat(v){
+  if(!v) return false;
+  if(v.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  return v.length>=3;
+}
+function showFieldErr(id, msg){
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(msg){ el.textContent=msg; el.classList.remove('hidden'); }
+  else { el.classList.add('hidden'); }
+}
+function setLoginError(boxId, msg, isWrongPortal){
+  const el=document.getElementById(boxId);
+  if(!el) return;
+  if(!msg){ el.classList.add('hidden'); return; }
+  el.textContent=msg;
+  el.className='rounded-xl px-4 py-3 text-sm mb-4 border '+(isWrongPortal?'bg-amber-50 text-amber-800 border-amber-200':'bg-red-50 text-red-700 border-red-200');
+  el.classList.remove('hidden');
+}
+function setBtnLoading(btnId, loading, label){
+  const b=document.getElementById(btnId);
+  if(!b) return;
+  b.disabled=loading;
+  b.innerHTML=loading?`<span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block"></span> Signing in...`:label;
+}
+let isAdminMode=false;
+function hideAllAuth(){
+  document.getElementById('auth-page')?.classList.add('hidden');
+  document.getElementById('app')?.classList.add('hidden');
+  // keep legacy hidden divs hidden too
+  document.getElementById('login-selector')?.classList.add('hidden');
+  document.getElementById('admin-login-page')?.classList.add('hidden');
+  document.getElementById('resident-login-page')?.classList.add('hidden');
+}
+function showAuthPanel(admin){
+  isAdminMode = !!admin;
+  const resPanel=document.getElementById('resident-panel');
+  const admPanel=document.getElementById('admin-panel');
+  const badge=document.getElementById('auth-badge');
+  const logo=document.getElementById('auth-logo');
+  const logoIcon=document.getElementById('auth-logo-icon');
+  if(!resPanel || !admPanel) return;
+  // transition: fade/slide
+  const show = admin ? admPanel : resPanel;
+  const hide = admin ? resPanel : admPanel;
+  hide.classList.add('hidden');
+  hide.classList.remove('active');
+  show.classList.remove('hidden');
+  // trigger reflow for transition
+  void show.offsetWidth;
+  show.classList.add('active');
+  show.classList.remove('enter');
+  // badge + logo update
+  if(badge){
+    if(admin){ badge.innerHTML='<span class="w-1.5 h-1.5 bg-slate-800 rounded-full"></span> Admin Portal'; badge.className='hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-slate-900 text-white border-slate-800'; }
+    else { badge.innerHTML='<span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Resident Portal'; badge.className='hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-blue-50 text-blue-700 border-blue-100'; }
+  }
+  if(logo){
+    logo.style.background = admin ? '#0f172a' : '#2563eb';
+  }
+  if(logoIcon){
+    logoIcon.setAttribute('data-lucide', admin ? 'shield-check' : 'home');
+  }
+  lucide.createIcons();
+}
+function goSelector(){
+  hideAllAuth();
+  document.getElementById('auth-page').classList.remove('hidden');
+  showAuthPanel(false);
+  history.pushState({},'',`/login`);
+  lucide.createIcons();
+}
+function goAdminLogin(){
+  const ap=document.getElementById('auth-page');
+  if(ap.classList.contains('hidden')){
+    hideAllAuth();
+    ap.classList.remove('hidden');
+  }
+  showAuthPanel(true);
+  history.pushState({},'',`/admin/login`);
+  lucide.createIcons();
+}
+function goResidentLogin(){
+  const ap=document.getElementById('auth-page');
+  if(ap.classList.contains('hidden')){
+    hideAllAuth();
+    ap.classList.remove('hidden');
+  }
+  showAuthPanel(false);
+  history.pushState({},'',`/login`);
+  lucide.createIcons();
+}
+async function handleAdminLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('admin-email').value.trim();
+  const password=document.getElementById('admin-password').value;
+  const remember=document.getElementById('admin-remember').checked;
+  const errBox='admin-login-error';
+  let hasErr=false;
+  if(!email){ showFieldErr('admin-email-err','Please enter your email or username.'); hasErr=true; } else if(!validateEmailFormat(email)){ showFieldErr('admin-email-err','Please enter a valid email or username.'); hasErr=true; } else showFieldErr('admin-email-err','');
+  if(!password){ showFieldErr('admin-pass-err','Please enter your password.'); hasErr=true; } else showFieldErr('admin-pass-err','');
+  if(hasErr) return;
+  setLoginError(errBox,'',false);
+  setBtnLoading('admin-login-btn',true,'Login as Admin');
+  try{
+    const res=await api('/api/auth/admin/login',{method:'POST',body:{email,password,rememberMe:remember}});
+    setAuth(res.token,res.user,remember);
+    toast('Welcome, '+(res.user.display_name||res.user.username),'success');
+    afterLoginRedirect();
+  }catch(ex){
+    const isPortal=ex.code==='WRONG_PORTAL';
+    let msg=ex.message||'Invalid email/username or password.';
+    if(ex.status===401) msg='Invalid email/username or password.';
+    if(isPortal) msg='You are not authorized to access the Admin Portal.';
+    setLoginError(errBox, msg + (isPortal?' Return to Resident Login.':''), isPortal);
+    if(isPortal){
+      const box=document.getElementById(errBox);
+      const btn=document.createElement('button');
+      btn.textContent='Go to Resident Login';
+      btn.className='ml-2 underline font-semibold text-amber-800';
+      btn.onclick=goResidentLogin;
+      box.appendChild(document.createElement('br'));
+      box.appendChild(btn);
+    }
+  }finally{ setBtnLoading('admin-login-btn',false,'Login as Admin'); lucide.createIcons(); }
+}
+async function handleResidentLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('resident-email').value.trim();
+  const password=document.getElementById('resident-password').value;
+  const remember=document.getElementById('resident-remember').checked;
+  const errBox='resident-login-error';
+  let hasErr=false;
+  if(!email){ showFieldErr('resident-email-err','Please enter your email or username.'); hasErr=true; } else if(!validateEmailFormat(email)){ showFieldErr('resident-email-err','Please enter a valid email or username.'); hasErr=true; } else showFieldErr('resident-email-err','');
+  if(!password){ showFieldErr('resident-pass-err','Please enter your password.'); hasErr=true; } else showFieldErr('resident-pass-err','');
+  if(hasErr) return;
+  setLoginError(errBox,'',false);
+  setBtnLoading('resident-login-btn',true,'Login');
+  try{
+    const res=await api('/api/auth/resident/login',{method:'POST',body:{email,password,rememberMe:remember}});
+    setAuth(res.token,res.user,remember);
+    toast('Welcome, '+(res.user.display_name||res.user.username),'success');
+    afterLoginRedirect();
+  }catch(ex){
+    const isPortal=ex.code==='WRONG_PORTAL';
+    let msg=ex.message||'Invalid email/username or password.';
+    if(isPortal) msg='This account is not authorized for the Resident Portal.';
+    setLoginError(errBox, msg + (isPortal?' Return to Admin Login.':''), isPortal);
+    if(isPortal){
+      const box=document.getElementById(errBox);
+      const btn=document.createElement('button');
+      btn.textContent='Go to Admin Login';
+      btn.className='ml-2 underline font-semibold text-amber-800';
+      btn.onclick=goAdminLogin;
+      box.appendChild(document.createElement('br'));
+      box.appendChild(btn);
+    }
+  }finally{ setBtnLoading('resident-login-btn',false,'Login'); lucide.createIcons(); }
+}
+function afterLoginRedirect(){
+  const role=currentUser?.role||getUser()?.role;
+  if(['admin','committee','staff'].includes(role)){
+    history.pushState({},'',`/admin/dashboard`);
+  } else {
+    history.pushState({},'',`/resident/dashboard`);
+  }
+  initApp();
 }
 async function checkAuth(){
-  if(!token) return false;
+  const tk=getToken();
+  if(!tk) return false;
   try{
     const res=await api('/api/auth/me');
-    currentUser=res.user; // keep original plus resident/house
-    // merge display fields
-    const stored=JSON.parse(localStorage.getItem('vac_user')||'{}');
-    currentUser={...stored,...res.user};
-    localStorage.setItem('vac_user',JSON.stringify(currentUser));
+    const prev=getUser()||{};
+    currentUser={...prev,...res.user};
+    const isSession=!!sessionStorage.getItem('vac_token');
+    if(isSession) sessionStorage.setItem('vac_user',JSON.stringify(currentUser));
+    else localStorage.setItem('vac_user',JSON.stringify(currentUser));
+    token=tk;
     return true;
-  }catch{ return false; }
+  }catch(e){
+    if(e.code==='TOKEN_EXPIRED' || e.status===401){
+      clearAuth();
+      toast('Your session has expired. Please log in again.','error');
+    }
+    return false;
+  }
+}
+async function logout(){
+  const tk=getToken();
+  if(tk){
+    try{ await api('/api/auth/logout',{method:'POST'}); }catch{}
+  }
+  clearAuth();
+  hideAllAuth();
+  document.getElementById('auth-page').classList.remove('hidden');
+  showAuthPanel(false);
+  history.pushState({},'',`/login`);
+  toast('Logged out successfully','info');
+  lucide.createIcons();
+}
+let forgotRole='resident';
+function openForgot(role){
+  forgotRole=role;
+  document.getElementById('forgot-email').value='';
+  document.getElementById('forgot-token').value='';
+  document.getElementById('forgot-newpass').value='';
+  document.getElementById('forgot-step1').classList.remove('hidden');
+  document.getElementById('forgot-step2').classList.add('hidden');
+  document.getElementById('forgot-msg').classList.add('hidden');
+  document.getElementById('forgot-modal').classList.add('on');
+  lucide.createIcons();
+}
+function closeForgot(e){
+  if(e && e.target && !e.target.classList.contains('mo')) return;
+  document.getElementById('forgot-modal').classList.remove('on');
+}
+async function submitForgotStep1(e){
+  e.preventDefault();
+  const email=document.getElementById('forgot-email').value.trim();
+  const btn=document.getElementById('forgot-step1-btn');
+  const msg=document.getElementById('forgot-msg');
+  if(!email){ toast('Please enter your email','error'); return; }
+  btn.disabled=true; btn.textContent='Sending...';
+  try{
+    const res=await api('/api/auth/forgot-password',{method:'POST',body:{email}});
+    msg.textContent=res.resetToken?`Reset token generated (demo): ${res.resetToken} — valid for 1 hour. Paste it below.`:`If the account exists, a reset link has been generated.`;
+    msg.className='rounded-xl px-4 py-3 text-sm mb-4 bg-green-50 text-green-700 border border-green-200';
+    msg.classList.remove('hidden');
+    if(res.resetToken) document.getElementById('forgot-token').value=res.resetToken;
+    document.getElementById('forgot-step1').classList.add('hidden');
+    document.getElementById('forgot-step2').classList.remove('hidden');
+    toast('Reset token generated','success');
+  }catch(ex){ toast(ex.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Send reset link'; }
+}
+async function submitForgotStep2(e){
+  e.preventDefault();
+  const token=document.getElementById('forgot-token').value.trim();
+  const np=document.getElementById('forgot-newpass').value;
+  const btn=document.getElementById('forgot-step2-btn');
+  if(!token || !np){ toast('Token and new password required','error'); return; }
+  if(np.length<6){ toast('Password must be at least 6 characters','error'); return; }
+  btn.disabled=true; btn.textContent='Resetting...';
+  try{
+    await api('/api/auth/reset-password',{method:'POST',body:{token,newPassword:np}});
+    toast('Password reset successful. Please log in.','success');
+    closeForgot();
+  }catch(ex){ toast(ex.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Reset password'; }
 }
 
-// --- nav ---
 const NAV_ADMIN=[
   {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
   {id:'houses',label:'Houses',icon:'home'},
@@ -290,37 +727,52 @@ const NAV_STAFF=[
   {id:'my-profile',label:'My Profile',icon:'user-round'},
 ];
 const NAV_RESIDENT=[
-  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard'},
-  {id:'my-profile',label:'My Profile',icon:'user-round'},
-  {id:'my-house',label:'My House',icon:'home'},
-  {id:'my-family',label:'Family Details',icon:'users-round'},
-  {id:'my-dues',label:'Fund Payment',icon:'circle-dollar-sign'},
-  {id:'my-payments',label:'My Payments',icon:'wallet'},
-  {id:'my-complaints',label:'My Complaints',icon:'message-square-warning'},
-  {id:'events',label:'Events',icon:'calendar-days'},
-  {id:'meetings',label:'Meetings',icon:'clipboard-list'},
-  {id:'committee',label:'Committee',icon:'shield-check'},
-  {id:'settings',label:'Settings',icon:'settings'},
+  {id:'dashboard',label:'Dashboard',icon:'layout-dashboard',group:'OVERVIEW'},
+  {id:'my-house',label:'My House',icon:'home',group:'MY APARTMENT'},
+  {id:'my-family',label:'Family Details',icon:'users-round',group:'MY APARTMENT'},
+  {id:'my-dues',label:'Fund Payment',icon:'circle-dollar-sign',group:'MY APARTMENT'},
+  {id:'my-payments',label:'My Payments',icon:'wallet',group:'MY APARTMENT'},
+  {id:'my-complaints',label:'My Complaints',icon:'message-square-warning',group:'MY APARTMENT'},
+  {id:'events',label:'Events',icon:'calendar-days',group:'COMMUNITY'},
+  {id:'meetings',label:'Meetings',icon:'clipboard-list',group:'COMMUNITY'},
+  {id:'committee',label:'Committee',icon:'shield-check',group:'COMMUNITY'},
+  {id:'my-profile',label:'My Profile',icon:'user-round',group:'ACCOUNT'},
+  {id:'settings',label:'Settings',icon:'settings',group:'ACCOUNT'},
 ];
 
 function buildNav(){
   const role=currentUser?.role||'resident';
-  const items=role==='admin'?NAV_ADMIN:role==='committee'?NAV_COMMITTEE:role==='staff'?NAV_STAFF:NAV_RESIDENT;
-  const prefix=role==='admin'?'admin':role==='resident'?'resident':role;
-  const activeRoute=getRoute().split('/').pop()||'dashboard';
+  let activeRoute=getRoute().split('/').pop()||'dashboard';
+  if(activeRoute==='profile') activeRoute='my-profile'; // alias /resident/profile
   const navEl=document.getElementById('sb-nav');
-  navEl.innerHTML=items.map(it=>`<div class="sl ${activeRoute===it.id?'active':''}" onclick="nav('${it.id}')"><i data-lucide="${it.icon}"></i><span>${it.label}</span></div>`).join('');
+  let html='';
+  if(role==='resident'){
+    const groups=['OVERVIEW','MY APARTMENT','COMMUNITY','ACCOUNT'];
+    groups.forEach(g=>{
+      const items=NAV_RESIDENT.filter(it=>it.group===g);
+      if(!items.length) return;
+      html+=`<div class="px-2 pt-3 pb-1 text-[10px] font-bold tracking-widest text-slate-400">${g}</div>`;
+      const mappedActive = activeRoute==='profile'?'my-profile':activeRoute;
+      html+=items.map(it=>`<div class="sl ${mappedActive===it.id?'active':''}" onclick="nav('${it.id==='my-profile'?'profile':it.id}')" style="${mappedActive===it.id?'background:#eff6ff;color:#2563eb;':''}"><i data-lucide="${it.icon}"></i><span>${it.label}</span></div>`).join('');
+    });
+  } else {
+    const items=role==='admin'?NAV_ADMIN:role==='committee'?NAV_COMMITTEE:role==='staff'?NAV_STAFF:NAV_RESIDENT;
+    html=items.map(it=>`<div class="sl ${activeRoute===it.id?'active':''}" onclick="nav('${it.id}')"><i data-lucide="${it.icon}"></i><span>${it.label}</span></div>`).join('');
+  }
+  navEl.innerHTML=html;
   lucide.createIcons();
   document.getElementById('sb-role').textContent=role==='admin'?'Admin Panel':role==='resident'?'Resident Panel':`${role.charAt(0).toUpperCase()+role.slice(1)} Panel`;
   document.getElementById('h-name').textContent=currentUser?.display_name||currentUser?.username||'-';
   document.getElementById('h-role').textContent=role.charAt(0).toUpperCase()+role.slice(1);
   const av=document.getElementById('h-av');
-  av.textContent=(currentUser?.display_name||'A').charAt(0).toUpperCase();
-  // crumb
-  const cur=location.hash.slice(1)||'dashboard';
+  const hphoto = currentUser?.photo_url || '';
+  if(hphoto){ av.innerHTML=`<img src="${hphoto}" class="w-full h-full object-cover rounded-full" onerror="this.parentElement.textContent='${escapeHtml((currentUser?.display_name||'A').charAt(0).toUpperCase())}'">`; } else { av.textContent=(currentUser?.display_name||'A').charAt(0).toUpperCase(); }
+  const cur=getRoute().split('/').pop()||'dashboard';
   document.getElementById('crumb').textContent=cur.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 function nav(id){
+  // spec prefers /resident/profile for My Profile
+  if(id==='my-profile') id='profile';
   const prefix=currentUser?.role==='admin'?'admin':currentUser?.role==='resident'?'resident':currentUser?.role||'resident';
   history.pushState({},'',`/${prefix}/${id}`);
   document.getElementById('pm')?.classList.add('hidden');
@@ -329,10 +781,22 @@ function nav(id){
 }
 function getRoute(){
   const path=location.pathname.replace(/^\/+|\/+$/g,'');
-  return path.includes('/')?path:(location.hash.slice(1)||'');
+  const q=path.split('?')[0];
+  if(q) return q;
+  const h=location.hash.slice(1).replace(/^\/+/,'');
+  return h||'';
 }
-window.addEventListener('hashchange', render);
-window.addEventListener('popstate', render);
+window.addEventListener('hashchange', ()=>{ if(getToken()) render(); else handlePublicRoute(); });
+window.addEventListener('popstate', ()=>{ if(getToken()) render(); else handlePublicRoute(); });
+function handlePublicRoute(){
+  const r=getRoute();
+  hideAllAuth();
+  document.getElementById('auth-page').classList.remove('hidden');
+  if(r==='admin/login' || r.startsWith('admin/login')) showAuthPanel(true);
+  else showAuthPanel(false);
+  // ensure correct push without loop
+  lucide.createIcons();
+}
 
 function toggleSB(){
   collapsed=!collapsed;
@@ -439,20 +903,49 @@ function closeModal(e){
   document.getElementById('modal').classList.remove('on');
 }
 
-// --- render router ---
+// --- render router with ProtectedRoute + RoleGuard ---
 async function render(){
-  const role=currentUser?.role||'resident';
-  const expectedPrefix=role==='admin'?'admin':role==='resident'?'resident':role;
-  const route=(getRoute()||`${expectedPrefix}/dashboard`).split('?')[0];
-  const routeParts=route.split('/');
-  if(routeParts.length<2 || routeParts[0]!==expectedPrefix){
-    history.replaceState({},'',`/${expectedPrefix}/dashboard`);
-    buildNav();
-    render();
+  const route=(getRoute()||'').split('?')[0];
+  // If trying to access login pages while authenticated, redirect to dashboard
+  if(getToken() && (route==='admin/login' || route==='resident/login' || route==='login')){
+    const r=currentUser?.role||getUser()?.role;
+    const pref=['admin','committee','staff'].includes(r)?'admin':'resident';
+    history.replaceState({},'',`/${pref}/dashboard`);
+    return render();
+  }
+  // Protected: must be authenticated for any /admin/* or /resident/* not login
+  const isProtected = route.startsWith('admin/') || route.startsWith('resident/');
+  const isLoginRoute = route==='admin/login' || route==='resident/login' || route==='login';
+  if(isProtected && !isLoginRoute){
+    const role=currentUser?.role||getUser()?.role||'';
+    const expectedPrefix=['admin','committee','staff'].includes(role)?'admin':role==='resident'?'resident':null;
+    if(!expectedPrefix){
+      hideAllAuth();
+      handlePublicRoute();
+      return;
+    }
+    if(!route.startsWith(expectedPrefix+'/')){
+      // Wrong portal access attempt - block
+      document.getElementById('content').innerHTML=`<div class="kc text-center py-12 border-amber-200 bg-amber-50/50"><i data-lucide="shield-alert" class="w-10 h-10 text-amber-500 mx-auto mb-3"></i><p class="font-bold text-amber-800">Access denied</p><p class="text-sm text-amber-700 mt-1">You do not have permission to access this portal.</p><button class="btn bp mt-4" onclick="history.pushState({},'','/${expectedPrefix}/dashboard');render()">Go to my dashboard</button></div>`;
+      lucide.createIcons();
+      return;
+    }
+  }
+  if(!route || route==='login'){
+    // let initApp handle
     return;
   }
+  const role=currentUser?.role||getUser()?.role||'resident';
+  const expectedPrefix=['admin','committee','staff'].includes(role)?'admin':'resident';
+  if(!route.includes('/')){
+    history.replaceState({},'',`/${expectedPrefix}/dashboard`);
+    return render();
+  }
+  const routeParts=route.split('/');
+  // if role mismatch, already handled above
   buildNav();
-  const id=routeParts[1]||'dashboard';
+  let id=routeParts[1]||'dashboard';
+  if(id==='profile') id='my-profile'; // alias /resident/profile -> my-profile
   const content=document.getElementById('content');
   content.innerHTML='<div class="flex items-center justify-center py-20"><div class="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div></div>';
   try{
@@ -469,26 +962,97 @@ async function render(){
     else if(id==='meetings') await renderMeetings();
     else if(id==='committee') await renderCommittee();
     else if(id==='reports') await renderReports();
-    else if(id==='my-profile') await renderProfile();
+    else if(id==='my-profile' || id==='profile') await renderProfile();
     else if(id==='settings') renderSettings();
     else content.innerHTML='<div class="kc text-center py-12"><i data-lucide="compass" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i><p class="font-semibold">Page not found</p><button class="btn bp mt-4" onclick="nav(\'dashboard\')">Go to Dashboard</button></div>';
   }catch(ex){
+    if(ex.status===401 || ex.code==='TOKEN_EXPIRED' || ex.code==='NO_TOKEN'){
+      clearAuth();
+      toast('Your session has expired. Please log in again.','error');
+      hideAllAuth();
+      handlePublicRoute();
+      return;
+    }
     content.innerHTML=`<div class="kc text-center py-12 border-red-200 bg-red-50/50"><p class="text-red-600 font-semibold">Failed to load</p><p class="text-sm text-red-500 mt-1">${escapeHtml(ex.message)}</p><button class="btn bs mt-4" onclick="render()">Retry</button></div>`;
   }
   lucide.createIcons();
 }
 
-// --- dashboard ---
+// --- dashboard — role-distinct rendering per spec (fixed: strict Array.isArray, loading/empty/error states) ---
 async function renderDashboard(){
   const content=document.getElementById('content');
-  const kpis=await api('/api/dashboard/kpis');
-  const [fundTrend, maintStats, complaintStats, activity]=await Promise.all([
-    api('/api/dashboard/fund-trend').catch(()=>[]),
-    api('/api/dashboard/maintenance-stats').catch(()=>({})),
-    api('/api/dashboard/complaint-stats').catch(()=>({})),
-    api('/api/dashboard/recent-activity').catch(()=>({combined:[]})),
-  ]);
   const isResident=currentUser.role==='resident';
+  // LOADING state
+  content.innerHTML='<div class="flex flex-col items-center justify-center py-16"><div class="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div><p class="text-sm text-slate-500 mt-3">Loading dashboard...</p></div>';
+  let data=null;
+  try{
+    if(isResident) data=await api('/api/resident/dashboard');
+    else data=await api('/api/admin/dashboard');
+  }catch(e){
+    // propagate auth errors to router's catcher
+    if(e.status===401 || e.code==='TOKEN_EXPIRED' || e.code==='NO_TOKEN' || e.code==='INVALID_TOKEN') throw e;
+    // Try legacy KPIs as fallback; if that also fails show ERROR state with Retry
+    try{
+      const kpis=await api('/api/dashboard/kpis');
+      const [ft, ms, cs, act]=await Promise.all([
+        api('/api/dashboard/fund-trend').catch(()=>[]),
+        api('/api/dashboard/maintenance-stats').catch(()=>({})),
+        api('/api/dashboard/complaint-stats').catch(()=>({})),
+        api('/api/dashboard/recent-activity').catch(()=>({combined:[]})),
+      ]);
+      const ev=await api('/api/dashboard/upcoming-events').catch(()=>[]);
+      const mt=await api('/api/dashboard/upcoming-meetings').catch(()=>[]);
+      if(isResident) data={ myDue:kpis.myDue, lastPayment:kpis.lastPayment, myOpenComplaints:kpis.myOpenComplaints, myMaintenance:kpis.myMaintenance, fundTrend:ft, maintenanceStats:ms, complaints:cs, recentActivity:act, upcomingEvents:ev, upcomingMeetings:mt, resident:{name:currentUser.display_name}};
+      else data={ totalHouses:kpis.totalHouses, occupied:kpis.occupied, vacant:kpis.vacant, totalFamilies:kpis.totalFamilies, totalResidents:kpis.totalResidents, totalCollected:kpis.totalCollected, pendingAmount:kpis.pendingAmount, bhk:{bhk1:kpis.bhk1,bhk2:kpis.bhk2,bhk3:kpis.bhk3}, complaints:[], complaintStats:{open:kpis.openComplaints, highPriority:kpis.highPriority}, openComplaints:kpis.openComplaints, highPriority:kpis.highPriority, maintenance:[], maintenanceStats:ms, openMaintenance:kpis.openMaintenance, fundTrend:ft, payments:[], residents:[], houses:[], recentPayments:[], upcomingEvents:ev, upcomingMeetings:mt, recentActivity:act };
+    }catch(err2){
+      content.innerHTML=`<div class="kc text-center py-12 border-red-200 bg-red-50/50"><p class="font-bold text-red-700">Failed to load dashboard data.</p><p class="text-sm text-red-500 mt-1">${escapeHtml(e.message||'Please try again.')}</p><button class="btn bp mt-4" onclick="renderDashboard()">Retry</button></div>`;
+      lucide.createIcons(); return;
+    }
+  }
+  if(!data){
+    content.innerHTML=`<div class="kc text-center py-12 border-red-200 bg-red-50/50"><p class="font-bold text-red-700">Failed to load dashboard data.</p><p class="text-sm text-red-500 mt-1">Please try again.</p><button class="btn bp mt-4" onclick="renderDashboard()">Retry</button></div>`;
+    lucide.createIcons(); return;
+  }
+  // Detect backend error object masquerading as complaints (do NOT silently swallow)
+  if(data.complaints && typeof data.complaints==='object' && !Array.isArray(data.complaints) && data.complaints.error){
+    content.innerHTML=`<div class="kc text-center py-12 border-amber-200 bg-amber-50/50"><p class="font-bold text-amber-800">Dashboard data error</p><p class="text-sm text-amber-700 mt-1">${escapeHtml(data.complaints.error)}</p><button class="btn bp mt-4" onclick="renderDashboard()">Retry</button></div>`;
+    lucide.createIcons(); return;
+  }
+  // Strict defensive helpers — must use Array.isArray before .slice/.map/.filter/.find/.forEach
+  function asArray(v){ return Array.isArray(v) ? v : []; }
+  function safeSlice(v, n){ return asArray(v).slice(0, n); }
+  // normalize keys for chart — ensure arrays are real arrays
+  const fundTrend = asArray(data.fundTrend);
+  const maintStats = data.maintenanceStats || (data.maintenance && !Array.isArray(data.maintenance) && data.maintenance.byStatus ? data.maintenance.byStatus : {}) || {};
+  const activity = data.recentActivity || data.combined ? {combined: asArray(data.recentActivity?.combined || data.combined || [])} : {combined:[]};
+  const kpis = data;
+  if (!data) data = {};
+  // Normalize complaints/payments to arrays — strict Array.isArray chain (never (data.complaints||[]).slice)
+  const complaintsArr = Array.isArray(data.complaints) ? data.complaints : Array.isArray(data.complaintsList) ? data.complaintsList : Array.isArray(data.complaintsArray) ? data.complaintsArray : [];
+  const paymentsArr = Array.isArray(data.payments) ? data.payments : Array.isArray(data.recentPayments) ? data.recentPayments : [];
+  const upcomingEventsArr = Array.isArray(data.upcomingEvents) ? data.upcomingEvents : Array.isArray(data.events) ? data.events : [];
+  const upcomingMeetingsArr = Array.isArray(data.upcomingMeetings) ? data.upcomingMeetings : Array.isArray(data.meetings) ? data.meetings : [];
+  const activityCombined = asArray(activity.combined);
+  // Additional collections for admin dashboard (spec requires every list to be array)
+  const residentsArr = Array.isArray(data.residents) ? data.residents : Array.isArray(data.residentsList) ? data.residentsList : [];
+  const housesArr = Array.isArray(data.houses) ? data.houses : Array.isArray(data.housesList) ? data.housesList : [];
+  const maintenanceArr = Array.isArray(data.maintenance) ? data.maintenance : Array.isArray(data.maintenanceList) ? data.maintenanceList : [];
+  const notificationsArr = Array.isArray(data.notifications) ? data.notifications : [];
+  const activitiesArr = Array.isArray(data.activities) ? data.activities : Array.isArray(data.recentActivities) ? data.recentActivities : [];
+  // pre-build activity html to avoid nested template literal bug
+  const residentCombined = [].concat(
+    safeSlice(complaintsArr, 2).map(c=>({title:'Complaint '+(c.status||'Open'), desc:c.subject||c.complaint_no||'', timestamp:c.created_at||c.timestamp})),
+    safeSlice(paymentsArr, 2).map(p=>({title:'Payment '+(p.status||'Done'), desc:fmtINR(p.amount||0)+' \u00b7 '+(p.date||''), timestamp:p.created_at||p.timestamp})),
+    activityCombined
+  ).slice(0,5);
+  const residentActivityHtml = residentCombined.length ? residentCombined.map(a=> '<div class="flex gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div><div class="min-w-0"><p class="text-xs font-medium text-slate-800 leading-tight">'+escapeHtml(a.title)+'</p><p class="text-xs text-slate-500 truncate">'+escapeHtml(a.desc||'')+'</p><p class="text-[11px] text-slate-400">'+(a.timestamp?new Date(a.timestamp).toLocaleString():'')+'</p></div></div>').join('') : '<p class="text-xs text-slate-400">No recent activity</p>';
+  const adminCombined = [].concat(
+    safeSlice(data.recentPayments || data.payments, 3).map(p=>({title:'Payment '+(p.status||'Done'), desc:fmtINR(p.amount||0)+' \u2014 '+(p.house_no||'House ')+' \u00b7 '+(p.resident_name||''), timestamp:p.created_at||p.timestamp})),
+    safeSlice(data.complaintsList || data.complaintsArray || data.complaints, 2).map(c=>({title:'Complaint '+(c.status||'Open'), desc:c.subject||c.complaint_no||'', timestamp:c.created_at||c.timestamp})),
+    activityCombined
+  ).slice(0,5);
+  const adminActivityHtml = adminCombined.length ? adminCombined.map(a=> '<div class="flex gap-3"><div class="w-1.5 h-6 bg-slate-900 rounded-full mt-0.5 flex-shrink-0"></div><div class="min-w-0"><p class="text-xs font-bold text-slate-800 leading-tight">'+escapeHtml(a.title)+'</p><p class="text-xs text-slate-500 truncate">'+escapeHtml(a.desc||'')+'</p><p class="text-[11px] text-slate-400">'+(a.timestamp?new Date(a.timestamp).toLocaleString():'')+'</p></div></div>').join('') : '<p class="text-xs text-slate-400">No recent activity</p>';
+  // we keep isResident from above for template
   content.innerHTML=`
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
@@ -501,53 +1065,143 @@ async function renderDashboard(){
       </div>
     </div>
 
-    ${isResident?`
+     ${isResident?`
+      <!-- RESIDENT: soft, rounded, friendly -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">My Due</p><p class="text-2xl font-bold mt-1">${fmtINR(kpis.myDue||0)}</p><p class="text-xs text-amber-600 mt-1">Pending maintenance</p></div>
-        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Last Payment</p><p class="text-2xl font-bold mt-1">${kpis.lastPayment?fmtINR(kpis.lastPayment.amount):'-'}</p><p class="text-xs text-slate-500 mt-1">${kpis.lastPayment?new Date(kpis.lastPayment.date).toLocaleDateString(): 'No payment yet'}</p></div>
-        <div class="kc"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Open Issues</p><p class="text-2xl font-bold mt-1">${kpis.myOpenComplaints||0}</p><p class="text-xs text-slate-500 mt-1">${kpis.myMaintenance||0} maintenance open</p></div>
+        <div class="kc !rounded-[18px] !border-blue-100 bg-gradient-to-br from-white to-blue-50/40"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">My Due</p><p class="text-2xl font-bold mt-1 text-slate-900">${fmtINR(kpis.myDue||0)}</p><p class="text-xs text-amber-600 mt-1 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Pending maintenance ${kpis.house? '· '+escapeHtml(kpis.house.house_no):''}</p><button class="btn bp !rounded-full mt-3 !py-2 text-xs" onclick="nav('my-dues')">Pay Now →</button></div>
+        <div class="kc !rounded-[18px]"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Last Payment</p><p class="text-2xl font-bold mt-1">${kpis.lastPayment?fmtINR(kpis.lastPayment.amount):'-'}</p><p class="text-xs text-slate-500 mt-1">${kpis.lastPayment? new Date(kpis.lastPayment.date).toLocaleDateString('en-IN')+' · '+escapeHtml(kpis.lastPayment.method||''): 'No payment yet'}</p><p class="text-[11px] text-slate-400 mt-1">${kpis.lastPayment? escapeHtml(kpis.lastPayment.receipt_no||''):''}</p></div>
+        <div class="kc !rounded-[18px]"><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Open Issues</p><p class="text-2xl font-bold mt-1">${kpis.myOpenComplaints||0}</p><p class="text-xs text-slate-500 mt-1">${kpis.myMaintenance||0} maintenance open · ${asArray(kpis.complaints).length||asArray(kpis.complaintsList).length||asArray(complaintsArr).length||0} total</p><div class="flex gap-2 mt-3"><button class="btn bs !rounded-full !py-1.5 text-xs flex-1" onclick="nav('my-complaints')">My Complaints</button><button class="btn bs !rounded-full !py-1.5 text-xs flex-1" onclick="nav('my-house')">My House</button></div></div>
       </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="kc lg:col-span-2 !rounded-[18px]">
+          <div class="flex items-center justify-between mb-4"><h3 class="font-semibold text-sm flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i> My Fund Trend</h3><span class="text-xs text-slate-400">Personal payments</span></div>
+          <div class="h-[260px]"><canvas id="fundChart"></canvas></div>
+        </div>
+        <div class="space-y-6">
+          <div class="kc !rounded-[18px]">
+            <h3 class="font-semibold text-sm mb-3">My Maintenance</h3>
+            <div class="space-y-2.5">
+              ${['Open','Assigned','In Progress','Completed'].map(k=>{
+                const val=maintStats[k.toLowerCase().replace(' ','')]||maintStats[k]||maintStats[k.toLowerCase()]||0;
+                const total=Math.max(1,(maintStats.open||0)+(maintStats.assigned||0)+(maintStats.inProgress||0)+(maintStats.completed||0));
+                const pct=Math.round(val/total*100);
+                const color=k==='Completed'?'bg-emerald-500':k==='In Progress'?'bg-amber-500':k==='Assigned'?'bg-blue-500':'bg-rose-400';
+                return `<div><div class="flex justify-between text-xs mb-1"><span class="font-medium text-slate-700">${k}</span><span class="text-slate-500">${val} (${pct}%)</span></div><div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${pct}%"></div></div></div>`;
+              }).join('')}
+            </div>
+          </div>
+          <div class="kc !rounded-[18px]">
+            <h3 class="font-semibold text-sm mb-3">Recent Activity</h3>
+            <div class="space-y-3">${residentActivityHtml}</div>
+          </div>
+        </div>
+      </div>
+       ${(upcomingEventsArr.length||upcomingMeetingsArr.length)?`
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div class="kc !rounded-[18px]"><h3 class="font-semibold text-sm mb-3 flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-violet-600"></i> Upcoming Events</h3><div class="space-y-2">${safeSlice(upcomingEventsArr,3).map(ev=>`<div class="flex justify-between items-center p-2.5 bg-violet-50/60 rounded-xl text-xs"><span class="font-medium truncate">${escapeHtml(ev.name)}</span><span class="text-slate-500 ml-2">${escapeHtml(ev.date)}</span></div>`).join('')||'<p class="text-xs text-slate-400">No upcoming events</p>'}</div></div>
+        <div class="kc !rounded-[18px]"><h3 class="font-semibold text-sm mb-3 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-slate-600"></i> Upcoming Meetings</h3><div class="space-y-2">${safeSlice(upcomingMeetingsArr,3).map(m=>`<div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl text-xs"><span class="font-medium truncate">${escapeHtml(m.title)}</span><span class="text-slate-500 ml-2">${escapeHtml(m.date)}</span></div>`).join('')||'<p class="text-xs text-slate-400">No meetings</p>'}</div></div>
+      </div>`:''}
     `:`
+      <!-- ADMIN: sharp, data-heavy, quick actions -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Houses</p><p class="text-2xl font-bold mt-1">${kpis.totalHouses}</p><p class="text-xs text-slate-500 mt-1">${kpis.occupied} occupied · ${kpis.vacant} vacant</p></div><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600"><i data-lucide="home" class="w-5 h-5"></i></div></div></div>
-        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Residents</p><p class="text-2xl font-bold mt-1">${kpis.totalResidents}</p><p class="text-xs text-slate-500 mt-1">${kpis.totalFamilies} families</p></div><div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600"><i data-lucide="users" class="w-5 h-5"></i></div></div></div>
-        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Collection</p><p class="text-2xl font-bold mt-1">${fmtINR(kpis.totalCollected)}</p><p class="text-xs text-amber-600 mt-1">${kpis.pendingDues} dues · ${fmtINR(kpis.pendingAmount)} pending</p></div><div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600"><i data-lucide="wallet" class="w-5 h-5"></i></div></div></div>
-        <div class="kc"><div class="flex items-start justify-between"><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Complaints</p><p class="text-2xl font-bold mt-1">${kpis.openComplaints}</p><p class="text-xs text-red-500 mt-1">${kpis.highPriority} high priority</p></div><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div></div></div>
+        <div class="kc !rounded-[10px] !border-slate-200"><div class="flex items-start justify-between"><div><p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Houses</p><p class="text-2xl font-black mt-1 tracking-tight">${kpis.totalHouses}</p><p class="text-xs text-slate-500 mt-1">${kpis.occupied} occupied · ${kpis.vacant} vacant</p></div><div class="w-10 h-10 rounded-[8px] bg-slate-900 flex items-center justify-center text-white"><i data-lucide="home" class="w-5 h-5"></i></div></div><div class="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-slate-900" style="width:${kpis.totalHouses?Math.round(kpis.occupied/kpis.totalHouses*100):0}%"></div></div></div>
+        <div class="kc !rounded-[10px]"><div class="flex items-start justify-between"><div><p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Residents</p><p class="text-2xl font-black mt-1">${kpis.totalResidents}</p><p class="text-xs text-slate-500 mt-1">${kpis.totalFamilies} families</p></div><div class="w-10 h-10 rounded-[8px] bg-blue-600 flex items-center justify-center text-white"><i data-lucide="users" class="w-5 h-5"></i></div></div></div>
+        <div class="kc !rounded-[10px]"><div class="flex items-start justify-between"><div><p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Collection</p><p class="text-2xl font-black mt-1">${fmtINR(kpis.totalCollected)}</p><p class="text-xs text-amber-600 mt-1 font-medium">${fmtINR(kpis.pendingAmount)} pending</p></div><div class="w-10 h-10 rounded-[8px] bg-amber-500 flex items-center justify-center text-white"><i data-lucide="wallet" class="w-5 h-5"></i></div></div></div>
+        <div class="kc !rounded-[10px]"><div class="flex items-start justify-between"><div><p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Complaints</p><p class="text-2xl font-black mt-1">${kpis.complaintStats?.open ?? kpis.complaints?.open ?? kpis.openComplaints ?? 0}</p><p class="text-xs text-red-600 mt-1 font-medium">${kpis.complaintStats?.highPriority ?? kpis.complaints?.highPriority ?? kpis.highPriority ?? 0} high priority</p></div><div class="w-10 h-10 rounded-[8px] bg-red-600 flex items-center justify-center text-white"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div></div></div>
       </div>
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600"><i data-lucide="building" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">BHK 1 / 2 / 3</p><p class="font-semibold text-sm">${kpis.bhk1} · ${kpis.bhk2} · ${kpis.bhk3}</p></div></div>
-        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><i data-lucide="wrench" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Maintenance Open</p><p class="font-semibold text-sm">${kpis.openMaintenance}</p></div></div>
-        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><i data-lucide="calendar-days" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Upcoming Events</p><p class="font-semibold text-sm">${kpis.monthlyEvents}</p></div></div>
-        <div class="kc flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600"><i data-lucide="clipboard-list" class="w-4 h-4"></i></div><div><p class="text-xs text-slate-500">Meetings</p><p class="font-semibold text-sm">${kpis.upcomingMeetings} upcoming</p></div></div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="kc !rounded-[10px] flex items-center gap-3 py-3"><div class="w-9 h-9 rounded-[8px] bg-slate-900 flex items-center justify-center text-white text-xs font-black">BHK</div><div><p class="text-[11px] font-bold text-slate-500 uppercase">Distribution</p><p class="font-bold text-sm">1:${kpis.bhk?.bhk1 ?? kpis.bhk1} · 2:${kpis.bhk?.bhk2 ?? kpis.bhk2} · 3:${kpis.bhk?.bhk3 ?? kpis.bhk3}</p></div></div>
+        <div class="kc !rounded-[10px] flex items-center gap-3"><div class="w-9 h-9 rounded-[8px] bg-blue-600 flex items-center justify-center text-white"><i data-lucide="wrench" class="w-4 h-4"></i></div><div><p class="text-[11px] font-bold text-slate-500 uppercase">Maintenance Open</p><p class="font-black text-sm">${kpis.maintenanceStats?.open ?? kpis.maintenance?.open ?? kpis.openMaintenance ?? 0} tickets</p></div></div>
+        <div class="kc !rounded-[10px] flex items-center gap-3"><div class="w-9 h-9 rounded-[8px] bg-violet-600 flex items-center justify-center text-white"><i data-lucide="calendar-days" class="w-4 h-4"></i></div><div><p class="text-[11px] font-bold text-slate-500 uppercase">Upcoming Events</p><p class="font-black text-sm">${upcomingEventsArr.length} scheduled</p></div></div>
+        <div class="kc !rounded-[10px] flex items-center gap-3"><div class="w-9 h-9 rounded-[8px] bg-slate-100 flex items-center justify-center text-slate-700 border"><i data-lucide="clipboard-list" class="w-4 h-4"></i></div><div><p class="text-[11px] font-bold text-slate-500 uppercase">Meetings</p><p class="font-black text-sm">${upcomingMeetingsArr.length} upcoming</p></div></div>
       </div>
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button class="btn !rounded-[8px] bg-slate-900 text-white hover:bg-black" onclick="nav('houses')"><i data-lucide="plus" class="w-4 h-4"></i> Add House</button>
+        <button class="btn !rounded-[8px] bs" onclick="nav('payments')"><i data-lucide="wallet" class="w-4 h-4"></i> Record Payment</button>
+        <button class="btn !rounded-[8px] bs" onclick="nav('complaints')"><i data-lucide="message-square-warning" class="w-4 h-4"></i> Review Complaints</button>
+        <button class="btn !rounded-[8px] bs" onclick="nav('reports')"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> View Reports</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="kc lg:col-span-2 !rounded-[10px]">
+          <div class="flex items-center justify-between mb-4"><h3 class="font-bold text-sm tracking-tight uppercase">Fund Trend — Collected vs Pending</h3><span class="text-xs font-medium bg-slate-900 text-white px-2 py-1 rounded">Overall</span></div>
+          <div class="h-[260px]"><canvas id="fundChart"></canvas></div>
+        </div>
+        <div class="space-y-6">
+          <div class="kc !rounded-[10px]">
+            <h3 class="font-bold text-xs uppercase tracking-widest mb-3">Maintenance Overview</h3>
+            <div class="space-y-2.5">
+              ${['Open','Assigned','In Progress','Completed'].map(k=>{
+                const val=maintStats[k.toLowerCase().replace(' ','')]||maintStats[k]||maintStats[k.toLowerCase()]||0;
+                const total=Math.max(1,(maintStats.open||0)+(maintStats.assigned||0)+(maintStats.inProgress||0)+(maintStats.completed||0));
+                const pct=Math.round(val/total*100);
+                const color=k==='Completed'?'bg-emerald-600':k==='In Progress'?'bg-amber-500':k==='Assigned'?'bg-blue-600':'bg-red-600';
+                return `<div><div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-700 uppercase text-[11px]">${k}</span><span class="font-mono text-xs">${val} · ${pct}%</span></div><div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${color}" style="width:${pct}%"></div></div></div>`;
+              }).join('')}
+            </div>
+          </div>
+          <div class="kc !rounded-[10px]">
+            <h3 class="font-bold text-xs uppercase tracking-widest mb-3">Recent Activity — System-wide</h3>
+            <div class="space-y-3">${adminActivityHtml}</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="kc !rounded-[10px]"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-xs uppercase tracking-widest">Upcoming Events</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('events')">View all →</button></div><div class="space-y-2">${safeSlice(upcomingEventsArr,4).map(ev=>`<div class="flex items-center justify-between p-3 border border-slate-200 rounded-[8px]"><div><p class="text-sm font-bold leading-none">${escapeHtml(ev.name)}</p><p class="text-xs text-slate-500">${escapeHtml(ev.venue||'')} · ${escapeHtml(ev.date)} ${escapeHtml(ev.time||'')}</p></div><span class="text-xs font-bold">${fmtINR(ev.budget)}</span></div>`).join('')||'<p class="text-xs text-slate-400">No upcoming events</p>'}</div></div>
+        <div class="kc !rounded-[10px]"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-xs uppercase tracking-widest">Upcoming Meetings</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('meetings')">View all →</button></div><div class="space-y-2">${safeSlice(upcomingMeetingsArr,4).map(m=>`<div class="p-3 border border-slate-200 rounded-[8px]"><p class="text-sm font-bold leading-none">${escapeHtml(m.title)}</p><p class="text-xs text-slate-500 line-clamp-1">${escapeHtml(m.agenda||'')}</p><p class="text-xs text-slate-400 mt-1">${escapeHtml(m.date)} ${escapeHtml(m.time||'')} · ${escapeHtml(m.venue||'')}</p></div>`).join('')||'<p class="text-xs text-slate-400">No meetings</p>'}</div></div>
+      </div>
+
+      <!-- Recent data lists with defensive array handling & empty states -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="kc !rounded-[10px] p-0 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100"><h3 class="font-bold text-xs uppercase tracking-widest">Recent Complaints</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('complaints')">View all →</button></div>
+          <div class="overflow-x-auto">
+            ${(() => {
+              const list = safeSlice(complaintsArr,5);
+              if(!list.length) return '<div class="p-8 text-center text-sm text-slate-400">No complaints found</div>';
+              return '<table><thead><tr><th>Complaint ID</th><th>Resident</th><th>House</th><th>Category</th><th>Priority</th><th>Date</th><th>Status</th></tr></thead><tbody>' + list.map(c=>`<tr><td class="font-mono text-xs">${escapeHtml(c.complaint_no||'#'+c.id)}</td><td class="text-xs">${escapeHtml(c.resident_name||'-')}</td><td class="text-xs">${escapeHtml(c.house_no||c.house_id||'-')}</td><td class="text-xs">${escapeHtml(c.category||'-')}</td><td>${c.priority?'<span class="badge '+(c.priority==='High'?'bs-d':c.priority==='Medium'?'bs-w':'bs-n')+'">'+escapeHtml(c.priority)+'</span>':'-'}</td><td class="text-xs">${c.created_at? new Date(c.created_at).toLocaleDateString('en-IN'): escapeHtml(c.date||'-')}</td><td>${statusBadge(c.status||'Open')}</td></tr>`).join('') + '</tbody></table>';
+            })()}
+          </div>
+        </div>
+        <div class="kc !rounded-[10px] p-0 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100"><h3 class="font-bold text-xs uppercase tracking-widest">Recent Payments</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('payments')">View all →</button></div>
+          <div class="overflow-x-auto">
+            ${(() => {
+              const list = safeSlice(paymentsArr,5);
+              if(!list.length) return '<div class="p-8 text-center text-sm text-slate-400">No payment records found</div>';
+              return '<table><thead><tr><th>Txn ID</th><th>House</th><th>Resident</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead><tbody>' + list.map(p=>`<tr><td class="font-mono text-xs">${escapeHtml(p.transaction_id||'-')}</td><td class="text-xs">${escapeHtml(p.house_no||p.house_id||'-')}</td><td class="text-xs">${escapeHtml(p.resident_name||'-')}</td><td class="font-semibold text-xs">${fmtINR(p.amount)}</td><td class="text-xs">${escapeHtml(p.date||(p.created_at? p.created_at.slice(0,10):'-'))}</td><td>${statusBadge(p.status||'Paid')}</td></tr>`).join('') + '</tbody></table>';
+            })()}
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="kc !rounded-[10px] p-0 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100"><h3 class="font-bold text-xs uppercase tracking-widest">Recent Maintenance</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('maintenance')">View all →</button></div>
+          <div class="overflow-x-auto">
+            ${(() => {
+              const list = safeSlice(maintenanceArr,5);
+              if(!list.length) return '<div class="p-8 text-center text-sm text-slate-400">No maintenance requests</div>';
+              return '<table><thead><tr><th>Request ID</th><th>House</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead><tbody>' + list.map(m=>`<tr><td class="font-mono text-xs">${escapeHtml(m.ticket_no||'#'+m.id)}</td><td class="text-xs">${escapeHtml(m.house_no||m.location||'-')}</td><td class="text-xs">${escapeHtml(m.category||'-')}</td><td><span class="badge ${m.priority==='High'?'bs-d':m.priority==='Medium'?'bs-w':'bs-n'}">${escapeHtml(m.priority||'-')}</span></td><td>${statusBadge(m.status||'Open')}</td><td class="text-xs">${m.created_at? new Date(m.created_at).toLocaleDateString('en-IN'): '-'}</td></tr>`).join('') + '</tbody></table>';
+            })()}
+          </div>
+        </div>
+        <div class="kc !rounded-[10px] p-0 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100"><h3 class="font-bold text-xs uppercase tracking-widest">Recent Residents</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav('residents')">View all →</button></div>
+          <div class="overflow-x-auto">
+            ${(() => {
+              const list = safeSlice(residentsArr,5);
+              if(!list.length) return '<div class="p-8 text-center text-sm text-slate-400">No residents found</div>';
+              return '<table><thead><tr><th>Name</th><th>House</th><th>Phone</th><th>Status</th></tr></thead><tbody>' + list.map(r=>`<tr><td class="text-xs font-medium">${escapeHtml(r.name)}</td><td class="text-xs">${escapeHtml(r.house_no||r.house_id||'-')}</td><td class="text-xs">${escapeHtml(r.phone||'-')}</td><td>${statusBadge(r.status||'Active')}</td></tr>`).join('') + '</tbody></table>';
+            })()}
+          </div>
+        </div>
+      </div>
+      ${(() => {
+        const hl = safeSlice(housesArr,5);
+        if(!hl.length) return '<div class="kc !rounded-[10px] mt-6 p-8 text-center text-sm text-slate-400">No houses found</div>';
+        return '<div class="kc !rounded-[10px] p-0 overflow-hidden mt-6"><div class="flex items-center justify-between px-4 py-3 border-b border-slate-100"><h3 class="font-bold text-xs uppercase tracking-widest">Recent Houses</h3><button class="text-xs text-blue-600 font-semibold" onclick="nav(\'houses\')">View all →</button></div><div class="overflow-x-auto"><table><thead><tr><th>House No</th><th>Block</th><th>BHK</th><th>Occupancy</th><th>Resident</th></tr></thead><tbody>' + hl.map(h=>`<tr><td class="font-semibold text-xs">${escapeHtml(h.house_no)}</td><td class="text-xs">${escapeHtml(h.block||'-')}</td><td class="text-xs">${h.bhk||'-'} BHK</td><td>${statusBadge(h.occupancy||'Vacant')}</td><td class="text-xs">${escapeHtml(h.resident_name||'-')}</td></tr>`).join('') + '</tbody></table></div></div>';
+      })()}
     `}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="kc lg:col-span-2">
-        <div class="flex items-center justify-between mb-4"><h3 class="font-semibold text-sm">Fund Trend (Collected vs Pending)</h3><span class="text-xs text-slate-400">Last 6 months</span></div>
-        <div class="h-[260px]"><canvas id="fundChart"></canvas></div>
-      </div>
-      <div class="space-y-6">
-        <div class="kc">
-          <h3 class="font-semibold text-sm mb-3">Maintenance by Status</h3>
-          <div class="space-y-2.5">
-            ${['Open','Assigned','In Progress','Completed'].map(k=>{
-              const val=maintStats[k.toLowerCase().replace(' ','')]||maintStats[k]||0;
-              const total=Math.max(1,(maintStats.open||0)+(maintStats.assigned||0)+(maintStats.inProgress||0)+(maintStats.completed||0));
-              const pct=Math.round(val/total*100);
-              const color=k==='Completed'?'bg-green-500':k==='In Progress'?'bg-amber-500':k==='Assigned'?'bg-blue-500':'bg-red-500';
-              return `<div><div class="flex justify-between text-xs mb-1"><span class="font-medium text-slate-700">${k}</span><span class="text-slate-500">${val} (${pct}%)</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${pct}%"></div></div></div>`;
-            }).join('')}
-          </div>
-        </div>
-        <div class="kc">
-          <h3 class="font-semibold text-sm mb-3">Recent Activity</h3>
-          <div class="space-y-3">
-            ${(activity.combined||[]).slice(0,5).map(a=>`<div class="flex gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div><div class="min-w-0"><p class="text-xs font-medium text-slate-800 leading-tight">${escapeHtml(a.title)}</p><p class="text-xs text-slate-500 truncate">${escapeHtml(a.desc||'')}</p><p class="text-[11px] text-slate-400">${a.timestamp?new Date(a.timestamp).toLocaleString():''}</p></div></div>`).join('') || '<p class="text-xs text-slate-400">No recent activity</p>'}
-          </div>
-        </div>
-      </div>
-    </div>
   `;
   lucide.createIcons();
   // chart
@@ -1186,59 +1840,422 @@ async function exportData(type){
   try{ const res=await api('/api/export/'+type); box.textContent=JSON.stringify(res,null,2); toast('Export ready','success'); }catch(ex){ box.textContent=ex.message; toast(ex.message,'error'); }
 }
 
-// --- profile & settings ---
+// --- profile & settings (full resident profile) ---
+let profileCache=null; let profileEditMode=false; let profileOriginal=null; let profilePhotoPreview=null;
 async function renderProfile(){
-  const res=await api('/api/auth/me');
-  const u=res.user; const r=res.resident;
   const content=document.getElementById('content');
+  // support alias /resident/profile -> my-profile; handle admin profile separately
+  const isAdminLike = ['admin','committee','staff'].includes(currentUser.role);
+  if(isAdminLike){
+    // Admin keeps simple profile
+    const res=await api('/api/auth/me');
+    const u=res.user;
+    content.innerHTML=`
+      <h1 class="text-xl font-bold mb-6">My Profile</h1>
+      <div class="kc max-w-2xl">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-bold">${escapeHtml((u.display_name||u.username).charAt(0).toUpperCase())}</div>
+          <div><h3 class="font-bold">${escapeHtml(u.display_name||u.username)}</h3><p class="text-sm text-slate-500">${escapeHtml(u.email)} · ${statusBadge(u.role)}</p></div>
+        </div>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Username</span><span class="font-medium">${escapeHtml(u.username)}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Email</span><span class="font-medium">${escapeHtml(u.email)}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Phone</span><span class="font-medium">${escapeHtml(u.phone||'-')}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Role</span><span class="font-medium">${escapeHtml(u.role)}</span></div>
+          <div class="flex justify-between py-2"><span class="text-slate-500">User ID</span><span class="font-medium">${u.id}</span></div>
+        </div>
+      </div>`;
+    lucide.createIcons(); return;
+  }
+  // Resident full profile
+  content.innerHTML=`<div class="flex flex-col items-center justify-center py-16"><div class="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div><p class="text-sm text-slate-500 mt-3">Loading profile...</p></div>`;
+  let data=null;
+  try{
+    data=await api('/api/resident/profile');
+  }catch(e){
+    content.innerHTML=`<div class="kc text-center py-12 border-red-200 bg-red-50/50"><p class="font-bold text-red-700">Unable to load your profile.</p><p class="text-sm text-red-500 mt-1">${escapeHtml(e.message)}</p><button class="btn bp mt-4" onclick="renderProfile()">Retry</button></div>`;
+    lucide.createIcons(); return;
+  }
+  profileCache=data; profileOriginal=JSON.parse(JSON.stringify(data));
+  renderProfileView();
+}
+function renderProfileView(){
+  const d=profileCache;
+  if(!d||!d.resident){ document.getElementById('content').innerHTML=`<div class="kc text-center py-12"><p class="text-slate-500">No profile found</p><button class="btn bp mt-4" onclick="renderProfile()">Retry</button></div>`; return; }
+  const r=d.resident, u=d.user, h=d.house, fam=d.family||[], prefs=d.preferences||{};
+  const content=document.getElementById('content');
+  const val = (v)=> (v===null||v===undefined||String(v).trim()===''? '': String(v));
+  const disp = (v,fallback='')=> { const s=String(v||'').trim(); return s? escapeHtml(s): `<span class="text-slate-400">${fallback||''}</span>`; };
+  const emptyText = (t)=> `<span class="text-slate-400 text-sm">${t}</span>`;
   content.innerHTML=`
-    <h1 class="text-xl font-bold mb-6">My Profile</h1>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="kc text-center h-fit">
-        <div class="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">${escapeHtml((u.display_name||u.username).charAt(0).toUpperCase())}</div>
-        <h3 class="font-bold">${escapeHtml(u.display_name||u.username)}</h3>
-        <p class="text-sm text-slate-500">${escapeHtml(u.email)}</p>
-        <p class="text-xs mt-1">${statusBadge(u.role)} ${r?escapeHtml(r.roll_no):''}</p>
-        <div class="mt-4 text-left text-xs space-y-1.5 border-t border-slate-100 pt-4">
-          <div class="flex justify-between"><span class="text-slate-500">Username</span><span class="font-medium">${escapeHtml(u.username)}</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">User ID</span><span class="font-medium">${escapeHtml(r?.roll_no||u.username)}</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">Phone</span><span class="font-medium">${escapeHtml(u.phone||'-')}</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">Role</span><span class="font-medium">${escapeHtml(u.role)}</span></div>
-          ${r?`<div class="flex justify-between"><span class="text-slate-500">House</span><span class="font-medium">${escapeHtml(res.house?.house_no||'-')}</span></div>`:''}
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-xl font-bold text-slate-900">My Profile</h1>
+        <p class="text-sm text-slate-500 mt-1">Manage your personal information, apartment details and account preferences.</p>
+      </div>
+      <button id="profile-edit-btn" class="btn ${profileEditMode?'bs':'bp'}" onclick="${profileEditMode?'cancelProfileEdit()':'enterProfileEdit()'}"><i data-lucide="${profileEditMode?'x':'pencil'}" class="w-4 h-4"></i>${profileEditMode?'Cancel':'Edit Profile'}</button>
+    </div>
+
+    <!-- Overview Card -->
+    <div class="kc !p-0 overflow-hidden mb-6">
+      <div class="h-20 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+      <div class="px-6 pb-6">
+        <div class="flex flex-wrap items-end gap-5 -mt-10">
+          <div class="relative">
+            <div id="profile-photo-wrap" class="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-2xl font-bold text-blue-600">
+              ${profilePhotoPreview? `<img src="${profilePhotoPreview}" class="w-full h-full object-cover">` : (r.photo_url||u.photo_url) ? `<img src="${r.photo_url||u.photo_url}" class="w-full h-full object-cover" onerror="this.outerHTML='<span>${escapeHtml((r.name||u.display_name||'A').charAt(0).toUpperCase())}</span>'">` : `<span>${escapeHtml((r.name||u.display_name||'A').charAt(0).toUpperCase())}</span>`}
+            </div>
+            ${profileEditMode?`<label class="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow cursor-pointer hover:bg-blue-700"><i data-lucide="camera" class="w-4 h-4"></i><input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handlePhotoSelect(event)"></label>`:''}
+          </div>
+          <div class="flex-1 min-w-[200px] pt-2">
+            <h2 class="text-xl font-bold text-slate-900">${escapeHtml(r.name||u.display_name||'-')}</h2>
+            <p class="text-sm text-slate-500">Resident ID: ${escapeHtml(r.roll_no||'-')} · Flat ${escapeHtml(h?.house_no||'-')} ${h?.block?`· Block ${escapeHtml(h.block)}`:''}</p>
+            <div class="flex flex-wrap items-center gap-2 mt-2">
+              <span class="badge ${r.type==='Owner'?'bs-i':'bs-w'}">${escapeHtml(r.type||'-')}</span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold ${r.status==='Active'?'text-emerald-600':'text-slate-500'}"><span class="w-2 h-2 ${r.status==='Active'?'bg-emerald-500':'bg-slate-400'} rounded-full"></span>${escapeHtml(r.status||'Active')}</span>
+            </div>
+          </div>
+          ${profileEditMode?`<div class="flex gap-2"><button class="btn bs text-xs" onclick="removeProfilePhoto()">Remove Photo</button><button class="btn bp text-xs" onclick="uploadProfilePhoto()">Upload</button></div>`:''}
         </div>
       </div>
-      <div class="lg:col-span-2 kc">
-        <h3 class="font-semibold text-sm mb-4">Edit Profile</h3>
-        <form onsubmit="submitProfile(event)" class="space-y-3">
-          <div><label class="fl">Display Name</label><input name="display_name" value="${escapeHtml(u.display_name||'')}" class="in"></div>
-          <div class="grid grid-cols-2 gap-3">
-            <div><label class="fl">Email</label><input name="email" value="${escapeHtml(u.email||'')}" class="in"></div>
-            <div><label class="fl">Phone</label><input name="phone" value="${escapeHtml(u.phone||'')}" class="in"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Personal Information -->
+      <div class="kc">
+        <h3 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-blue-600"></i>Personal Information</h3>
+        ${profileEditMode?`
+          <div class="space-y-3">
+            <div><label class="fl">Full Name <span class="text-red-500">*</span></label><input id="pf-name" value="${escapeHtml(r.name||'')}" class="in"><p id="err-pf-name" class="text-xs text-red-500 mt-1 hidden"></p></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="fl">Date of Birth</label><input id="pf-dob" type="date" value="${escapeHtml(r.dob||'')}" class="in"></div>
+              <div><label class="fl">Gender</label><select id="pf-gender" class="in"><option ${r.gender==='Male'?'selected':''}>Male</option><option ${r.gender==='Female'?'selected':''}>Female</option><option ${r.gender==='Other'?'selected':''}>Other</option></select></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="fl">Phone</label><input id="pf-phone" value="${escapeHtml(r.phone||'')}" class="in" placeholder="+91 XXXXX XXXXX"><p id="err-pf-phone" class="text-xs text-red-500 hidden"></p></div>
+              <div><label class="fl">Email <span class="text-red-500">*</span></label><input id="pf-email" type="email" value="${escapeHtml(r.email||'')}" class="in"><p id="err-pf-email" class="text-xs text-red-500 hidden"></p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="fl">Marital Status</label><select id="pf-marital" class="in"><option value="">Select</option><option ${r.marital_status==='Single'?'selected':''}>Single</option><option ${r.marital_status==='Married'?'selected':''}>Married</option><option ${r.marital_status==='Divorced'?'selected':''}>Divorced</option><option ${r.marital_status==='Widowed'?'selected':''}>Widowed</option></select></div>
+              <div><label class="fl">Preferred Language</label><select id="pf-lang" class="in"><option ${r.preferred_language==='English'?'selected':''}>English</option><option ${r.preferred_language==='Hindi'?'selected':''}>Hindi</option><option ${r.preferred_language==='Kannada'?'selected':''}>Kannada</option><option ${r.preferred_language==='Tamil'?'selected':''}>Tamil</option><option ${r.preferred_language==='Telugu'?'selected':''}>Telugu</option></select></div>
+            </div>
           </div>
-          ${r?`<div class="grid grid-cols-2 gap-3">
-            <div><label class="fl">Emergency Name</label><input name="emergency_name" value="${escapeHtml(r.emergency_name||'')}" class="in"></div>
-            <div><label class="fl">Emergency Phone</label><input name="emergency_phone" value="${escapeHtml(r.emergency_phone||'')}" class="in"></div>
-          </div>`:''}
-          <div class="flex justify-end pt-2"><button type="submit" class="btn bp">Save Changes</button></div>
-        </form>
+        `:`
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Full Name</p><p class="font-medium mt-1">${r.name?escapeHtml(r.name):emptyText('Not set')}</p></div>
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Date of Birth</p><p class="font-medium mt-1">${r.dob? new Date(r.dob).toLocaleDateString('en-IN'): emptyText('Not set')}</p></div>
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Gender</p><p class="font-medium mt-1">${r.gender?escapeHtml(r.gender):emptyText('Not set')}</p></div>
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Marital Status</p><p class="font-medium mt-1">${r.marital_status?escapeHtml(r.marital_status):emptyText('Not set')}</p></div>
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Phone</p><p class="font-medium mt-1">${r.phone?escapeHtml(r.phone):emptyText('Not set')}</p></div>
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Email</p><p class="font-medium mt-1 break-all">${r.email?escapeHtml(r.email):emptyText('Not set')}</p></div>
+            <div class="col-span-2"><p class="text-xs text-slate-500 uppercase tracking-wide">Preferred Language</p><p class="font-medium mt-1">${r.preferred_language?escapeHtml(r.preferred_language):'English'}</p></div>
+          </div>
+        `}
       </div>
-    </div>`;
+
+      <!-- Contact / Address -->
+      <div class="kc">
+        <h3 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>Address Information</h3>
+        ${profileEditMode?`
+          <div class="space-y-3">
+            <div><label class="fl">Address Line 1</label><input id="pf-addr1" value="${escapeHtml(r.address||'')}" class="in" placeholder="Flat no, Building name"></div>
+            <div><label class="fl">Address Line 2</label><input id="pf-addr2" value="${escapeHtml(r.address2||'')}" class="in" placeholder="Street, Locality"></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="fl">City</label><input id="pf-city" value="${escapeHtml(r.city||'')}" class="in"></div>
+              <div><label class="fl">State</label><input id="pf-state" value="${escapeHtml(r.state||'')}" class="in"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="fl">Country</label><input id="pf-country" value="${escapeHtml(r.country||'')}" class="in"></div>
+              <div><label class="fl">Postal Code</label><input id="pf-postal" value="${escapeHtml(r.postal_code||'')}" class="in"><p id="err-pf-postal" class="text-xs text-red-500 hidden"></p></div>
+            </div>
+          </div>
+        `:`
+          <div class="space-y-3 text-sm">
+            <div><p class="text-xs text-slate-500 uppercase tracking-wide">Address Line 1</p><p class="font-medium mt-1">${r.address?escapeHtml(r.address):emptyText('Not set')}</p></div>
+            ${r.address2?`<div><p class="text-xs text-slate-500 uppercase tracking-wide">Address Line 2</p><p class="font-medium mt-1">${escapeHtml(r.address2)}</p></div>`:''}
+            <div class="grid grid-cols-2 gap-3">
+              <div><p class="text-xs text-slate-500 uppercase tracking-wide">City</p><p class="font-medium mt-1">${r.city?escapeHtml(r.city):emptyText('Not set')}</p></div>
+              <div><p class="text-xs text-slate-500 uppercase tracking-wide">State</p><p class="font-medium mt-1">${r.state?escapeHtml(r.state):emptyText('Not set')}</p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><p class="text-xs text-slate-500 uppercase tracking-wide">Country</p><p class="font-medium mt-1">${r.country?escapeHtml(r.country):emptyText('Not set')}</p></div>
+              <div><p class="text-xs text-slate-500 uppercase tracking-wide">Postal Code</p><p class="font-medium mt-1">${r.postal_code?escapeHtml(r.postal_code):emptyText('Not set')}</p></div>
+            </div>
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- My Apartment (read-only) -->
+    <div class="kc mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="home" class="w-4 h-4 text-slate-700"></i>My Apartment <span class="text-xs font-normal text-slate-400 ml-2">Managed by Apartment Administration</span></h3>
+        ${h?`<span class="text-xs px-2 py-1 bg-slate-100 rounded-full">${escapeHtml(h.house_no)} · Block ${escapeHtml(h.block)} · Floor ${h.floor}</span>`:''}
+      </div>
+      ${h?`
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Flat Number</p><p class="font-semibold mt-1">${escapeHtml(h.house_no)}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Building / Block</p><p class="font-medium mt-1">${escapeHtml(h.block||'-')}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Floor</p><p class="font-medium mt-1">${h.floor ?? '-'}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">BHK / Type</p><p class="font-medium mt-1">${h.bhk? h.bhk+' BHK': '-'}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Ownership Type</p><p class="font-medium mt-1">${escapeHtml(r.type||'-')}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Occupancy Status</p><p class="font-medium mt-1">${statusBadge(h.occupancy||'-')}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Move-in Date</p><p class="font-medium mt-1">${r.move_in_date? new Date(r.move_in_date).toLocaleDateString('en-IN'): (r.created_at? new Date(r.created_at).toLocaleDateString('en-IN'): emptyText('Not set'))}</p></div>
+          <div><p class="text-xs text-slate-500 uppercase tracking-wide">Parking</p><p class="font-medium mt-1">${r.parking_info?escapeHtml(r.parking_info):emptyText('Not assigned')}</p></div>
+        </div>
+        <div class="mt-3 flex items-center gap-2 text-xs text-slate-400"><i data-lucide="info" class="w-3.5 h-3.5"></i> Apartment information is managed by administration. Contact admin for changes.</div>
+      `: `<p class="text-sm text-slate-400">No apartment linked to your profile. Contact administration.</p>`}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <!-- Emergency Contact -->
+      <div class="kc">
+        <h3 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="phone-call" class="w-4 h-4 text-red-500"></i>Emergency Contact</h3>
+        ${profileEditMode?`
+          <div class="space-y-3">
+            <div><label class="fl">Contact Name</label><input id="pf-em-name" value="${escapeHtml(r.emergency_name||'')} " class="in"></div>
+            <div><label class="fl">Relationship</label><input id="pf-em-rel" value="${escapeHtml(r.emergency_relation||'')}" class="in" placeholder="Father, Mother, Spouse"></div>
+            <div><label class="fl">Phone Number</label><input id="pf-em-phone" value="${escapeHtml(r.emergency_phone||'')}" class="in"><p id="err-pf-emphone" class="text-xs text-red-500 hidden"></p></div>
+            <div><label class="fl">Alternate Phone</label><input id="pf-em-alt" value="${escapeHtml(r.emergency_alt_phone||'')}" class="in"></div>
+          </div>
+        `:`
+          ${r.emergency_name||r.emergency_phone?`
+            <div class="space-y-3 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div><p class="text-xs text-slate-500 uppercase tracking-wide">Contact Name</p><p class="font-medium mt-1">${escapeHtml(r.emergency_name||'-')}</p></div>
+                <div><p class="text-xs text-slate-500 uppercase tracking-wide">Relationship</p><p class="font-medium mt-1">${r.emergency_relation?escapeHtml(r.emergency_relation):emptyText('Not set')}</p></div>
+              </div>
+              <div><p class="text-xs text-slate-500 uppercase tracking-wide">Phone Number</p><p class="font-medium mt-1">${r.emergency_phone?escapeHtml(r.emergency_phone):emptyText('Not set')}</p></div>
+              ${r.emergency_alt_phone?`<div><p class="text-xs text-slate-500 uppercase tracking-wide">Alternate Phone</p><p class="font-medium mt-1">${escapeHtml(r.emergency_alt_phone)}</p></div>`:''}
+            </div>
+          `:`<div class="text-center py-6"><p class="text-sm text-slate-400">No emergency contact added.</p><button class="btn bp mt-3 text-xs" onclick="enterProfileEdit()">Add Contact</button></div>`}
+        `}
+      </div>
+
+      <!-- Family Summary -->
+      <div class="kc">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-violet-600"></i>Family Members</h3>
+          <button class="btn bs bx text-xs" onclick="nav('my-family')">View Family Details</button>
+        </div>
+        ${fam.length?`
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table><thead><tr><th>Name</th><th>Relationship</th><th>Status</th></tr></thead>
+            <tbody>${fam.slice(0,5).map(m=>`<tr><td class="text-xs font-medium">${escapeHtml(m.name)}</td><td class="text-xs">${escapeHtml(m.relation||'-')}</td><td>${statusBadge(m.status||'Active')}</td></tr>`).join('')}</tbody></table>
+          </div>
+          ${fam.length>5?`<p class="text-xs text-slate-400 mt-2">+${fam.length-5} more</p>`:''}
+        `: `<div class="text-center py-6"><p class="text-sm text-slate-400">No family members linked.</p><button class="btn bs mt-3 text-xs" onclick="nav('my-family')">View Family Details</button></div>`}
+      </div>
+    </div>
+
+    <!-- Account & Security -->
+    <div class="kc mt-6">
+      <h3 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-slate-700"></i>Account Information</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+        <div class="space-y-3">
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Username</span><span class="font-medium">${escapeHtml(u.username)}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Email</span><span class="font-medium break-all">${escapeHtml(u.email)}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Phone</span><span class="font-medium">${escapeHtml(u.phone||'-')}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Resident ID</span><span class="font-mono text-xs font-semibold">${escapeHtml(r.roll_no||'-')}</span></div>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Account Status</span><span>${statusBadge(r.status||'Active')}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Registration Date</span><span class="font-medium">${d.registrationDate? new Date(d.registrationDate).toLocaleDateString('en-IN'): '-'}</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-100"><span class="text-slate-500">Last Login</span><span class="font-medium">${d.lastLogin? new Date(d.lastLogin).toLocaleString('en-IN'): '-'}</span></div>
+          <div class="flex justify-between py-2"><span class="text-slate-500">Role</span><span class="font-medium">${escapeHtml(u.role)}</span><span class="text-xs text-slate-400">Cannot be changed</span></div>
+        </div>
+      </div>
+      <div class="mt-6 p-4 bg-slate-50 rounded-xl flex items-center justify-between">
+        <div><p class="font-semibold text-sm">Password</p><p class="text-xs text-slate-500">Last changed: ${d.lastLogin? new Date(d.lastLogin).toLocaleDateString('en-IN'): 'Never'}</p></div>
+        <button class="btn bs" onclick="openPasswordModal()"><i data-lucide="key-round" class="w-4 h-4"></i>Change Password</button>
+      </div>
+    </div>
+
+    <!-- Notification Preferences -->
+    <div class="kc mt-6">
+      <h3 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>Notification Preferences</h3>
+      <div class="space-y-3" id="notif-prefs">
+        ${[
+          ['email_notifications','Email Notifications','Receive emails for important updates'],
+          ['payment_reminders','Payment Reminders','Monthly maintenance due alerts'],
+          ['complaint_updates','Complaint Updates','Status changes on your complaints'],
+          ['maintenance_updates','Maintenance Updates','Maintenance ticket updates'],
+          ['event_notifications','Event Notifications','Upcoming community events'],
+          ['meeting_notifications','Meeting Notifications','Meeting schedules and minutes'],
+          ['apartment_notices','Important Apartment Notices','Critical notices from administration'],
+        ].map(([key,label,desc])=>`
+          <label class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 cursor-pointer">
+            <div><p class="font-medium text-sm">${label}</p><p class="text-xs text-slate-500">${desc}</p></div>
+            <input type="checkbox" ${prefs[key]?'checked':''} onchange="toggleNotifPref('${key}', this.checked)" class="w-10 h-5 appearance-none bg-slate-200 rounded-full relative before:content-[''] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-0.5 before:left-0.5 before:transition-all checked:bg-blue-600 checked:before:translate-x-5 transition">
+          </label>
+        `).join('')}
+      </div>
+    </div>
+
+    ${profileEditMode?`
+      <div class="sticky bottom-4 mt-6 kc !py-4 flex items-center justify-between shadow-lg border-blue-200 bg-blue-50/50">
+        <p class="text-sm font-medium text-blue-800">You have unsaved changes</p>
+        <div class="flex gap-2">
+          <button class="btn bs" onclick="cancelProfileEdit()">Discard Changes</button>
+          <button id="profile-save-btn" class="btn bp" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+    `:''}
+  `;
+  lucide.createIcons();
 }
-async function submitProfile(e){
+function enterProfileEdit(){ profileEditMode=true; profilePhotoPreview=null; renderProfileView(); }
+function cancelProfileEdit(){
+  // check unsaved
+  const hasChanges = JSON.stringify(profileCache)!==JSON.stringify(profileOriginal) || profilePhotoPreview;
+  if(hasChanges && !confirm('Discard changes?')) return;
+  profileCache=JSON.parse(JSON.stringify(profileOriginal));
+  profileEditMode=false; profilePhotoPreview=null;
+  renderProfileView();
+}
+function handlePhotoSelect(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  if(!['image/jpeg','image/png','image/webp','image/jpg'].includes(file.type)){ toast('Only JPG/PNG/WebP allowed','error'); return; }
+  if(file.size>2*1024*1024){ toast('File too large. Max 2MB.','error'); return; }
+  const reader=new FileReader();
+  reader.onload=(ev)=>{ profilePhotoPreview=ev.target.result; renderProfileView(); };
+  reader.readAsDataURL(file);
+}
+async function uploadProfilePhoto(){
+  const input=document.getElementById('photo-input');
+  const file=input?.files?.[0];
+  if(!file){ toast('Please select a photo first','error'); return; }
+  const fd=new FormData(); fd.append('photo', file);
+  try{
+    const tk=getToken();
+    const res=await fetch('/api/resident/profile/photo',{ method:'POST', headers:{'Authorization':'Bearer '+tk}, body: fd });
+    const j=await res.json();
+    if(!res.ok) throw new Error(j.error||'Upload failed');
+    toast('Profile photo updated successfully.','success');
+    profilePhotoPreview=null;
+    profileCache.resident.photo_url=j.photo_url;
+    profileCache.user.photo_url=j.photo_url;
+    profileOriginal=JSON.parse(JSON.stringify(profileCache));
+    currentUser.photo_url=j.photo_url;
+    const stored=JSON.parse(localStorage.getItem('vac_user')||sessionStorage.getItem('vac_user')||'null');
+    if(stored){ stored.photo_url=j.photo_url; const isSession=!!sessionStorage.getItem('vac_token'); if(isSession) sessionStorage.setItem('vac_user',JSON.stringify(stored)); else localStorage.setItem('vac_user',JSON.stringify(stored)); }
+    buildNav();
+    renderProfileView();
+  }catch(ex){ toast(ex.message||'Unable to upload profile photo.','error'); }
+}
+async function removeProfilePhoto(){
+  try{
+    await api('/api/resident/profile/photo',{method:'DELETE'});
+    toast('Profile photo removed.','success');
+    profileCache.resident.photo_url=''; profileCache.user.photo_url=''; profilePhotoPreview=null;
+    profileOriginal=JSON.parse(JSON.stringify(profileCache));
+    currentUser.photo_url='';
+    buildNav();
+    renderProfileView();
+  }catch(ex){ toast(ex.message,'error'); }
+}
+function validateProfile(){
+  let ok=true;
+  const name=document.getElementById('pf-name')?.value.trim();
+  const email=document.getElementById('pf-email')?.value.trim();
+  const phone=document.getElementById('pf-phone')?.value.trim();
+  const postal=document.getElementById('pf-postal')?.value.trim();
+  const emPhone=document.getElementById('pf-em-phone')?.value.trim();
+  const show=(id,msg)=>{ const el=document.getElementById(id); if(!el) return; if(msg){ el.textContent=msg; el.classList.remove('hidden'); } else el.classList.add('hidden'); };
+  if(!name){ show('err-pf-name','Full name is required.'); ok=false; } else show('err-pf-name','');
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ show('err-pf-email','Please enter a valid email address.'); ok=false; } else show('err-pf-email','');
+  if(phone && !/^[0-9+\- ]{7,15}$/.test(phone)){ show('err-pf-phone','Please enter a valid phone number.'); ok=false; } else show('err-pf-phone','');
+  if(postal && !/^[0-9]{4,10}$/.test(postal)){ show('err-pf-postal','Please enter a valid postal code.'); ok=false; } else show('err-pf-postal','');
+  if(emPhone && !/^[0-9+\- ]{7,15}$/.test(emPhone)){ show('err-pf-emphone','Please enter a valid phone number.'); ok=false; } else show('err-pf-emphone','');
+  return ok;
+}
+async function saveProfile(){
+  if(!validateProfile()){ toast('Please fix validation errors','error'); return; }
+  const btn=document.getElementById('profile-save-btn');
+  btn.disabled=true; btn.textContent='Saving...';
+  const body={
+    name:document.getElementById('pf-name').value.trim(),
+    email:document.getElementById('pf-email').value.trim(),
+    phone:document.getElementById('pf-phone').value.trim(),
+    dob:document.getElementById('pf-dob').value,
+    gender:document.getElementById('pf-gender').value,
+    marital_status:document.getElementById('pf-marital').value,
+    preferred_language:document.getElementById('pf-lang').value,
+    address:document.getElementById('pf-addr1').value.trim(),
+    address2:document.getElementById('pf-addr2').value.trim(),
+    city:document.getElementById('pf-city').value.trim(),
+    state:document.getElementById('pf-state').value.trim(),
+    country:document.getElementById('pf-country').value.trim(),
+    postal_code:document.getElementById('pf-postal').value.trim(),
+    emergency_name:document.getElementById('pf-em-name').value.trim(),
+    emergency_relation:document.getElementById('pf-em-rel').value.trim(),
+    emergency_phone:document.getElementById('pf-em-phone').value.trim(),
+    emergency_alt_phone:document.getElementById('pf-em-alt').value.trim(),
+  };
+  try{
+    const res=await api('/api/resident/profile',{method:'PUT',body});
+    toast('Profile updated successfully.','success');
+    profileCache.resident=res.resident;
+    profileCache.user=res.user;
+    profileOriginal=JSON.parse(JSON.stringify(profileCache));
+    profileEditMode=false; profilePhotoPreview=null;
+    // update nav header
+    currentUser.display_name=res.user.display_name; currentUser.email=res.user.email; currentUser.phone=res.user.phone;
+    const isSession=!!sessionStorage.getItem('vac_token');
+    const storedKey=isSession?'vac_user':'vac_user';
+    const store=isSession?sessionStorage:localStorage;
+    const stored=JSON.parse(store.getItem('vac_user')||'null')||currentUser;
+    stored.display_name=res.user.display_name; stored.email=res.user.email; stored.phone=res.user.phone;
+    store.setItem('vac_user',JSON.stringify(stored));
+    buildNav();
+    renderProfileView();
+  }catch(ex){
+    toast(ex.message||'Unable to update profile.','error');
+  }finally{ btn.disabled=false; btn.textContent='Save Changes'; }
+}
+async function toggleNotifPref(key, checked){
+  try{
+    const body={}; body[key]=checked;
+    await api('/api/resident/profile/notifications',{method:'PUT', body});
+    toast('Notification preferences updated.','success');
+    if(profileCache?.preferences) profileCache.preferences[key]=checked?1:0;
+  }catch(ex){ toast(ex.message,'error'); renderProfileView(); }
+}
+function openPasswordModal(){
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-bold text-base mb-1">Change Password</h3>
+      <p class="text-xs text-slate-500 mb-4">Verify current password and set a new one.</p>
+      <form onsubmit="submitPasswordChange(event)" class="space-y-3">
+        <div><label class="fl">Current Password</label><input type="password" name="currentPassword" required class="in" placeholder="Current password"></div>
+        <div><label class="fl">New Password</label><input type="password" name="newPassword" required class="in" placeholder="Min 6 characters"></div>
+        <div><label class="fl">Confirm New Password</label><input type="password" name="confirmPassword" required class="in" placeholder="Confirm password"></div>
+        <p id="pw-err" class="text-xs text-red-500 hidden"></p>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn bs" onclick="closeModal()">Cancel</button>
+          <button type="submit" id="pw-btn" class="btn bp">Update Password</button>
+        </div>
+      </form>
+    </div>
+  `);
+}
+async function submitPasswordChange(e){
   e.preventDefault();
   const fd=new FormData(e.target); const body=Object.fromEntries(fd.entries());
+  const errEl=document.getElementById('pw-err');
+  if(body.newPassword.length<6){ errEl.textContent='New password must be at least 6 characters.'; errEl.classList.remove('hidden'); return; }
+  if(body.newPassword!==body.confirmPassword){ errEl.textContent='Passwords do not match.'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+  const btn=document.getElementById('pw-btn'); btn.disabled=true; btn.textContent='Updating...';
   try{
-    if(currentUser.resident_id){
-      await api('/api/residents/'+currentUser.resident_id,{method:'PUT',body:{name:body.display_name, phone:body.phone, email:body.email, emergency_name:body.emergency_name, emergency_phone:body.emergency_phone}});
-    } else {
-      await api('/api/users/'+currentUser.id,{method:'PUT',body:{display_name:body.display_name, phone:body.phone}});
-    }
-    toast('Profile updated','success');
-    const me=await api('/api/auth/me');
-    currentUser={...currentUser,...me.user};
-    localStorage.setItem('vac_user',JSON.stringify(currentUser));
-    buildNav();
-  }catch(ex){ toast(ex.message,'error'); }
+    await api('/api/resident/profile/password',{method:'PUT',body});
+    toast('Password changed successfully.','success');
+    closeModal();
+  }catch(ex){
+    errEl.textContent=ex.message||'Unable to change password.'; errEl.classList.remove('hidden');
+    toast(ex.message,'error');
+  }finally{ btn.disabled=false; btn.textContent='Update Password'; }
 }
 function renderSettings(){
   document.getElementById('content').innerHTML=`
@@ -1260,19 +2277,37 @@ function renderSettings(){
   lucide.createIcons();
 }
 
-// --- init ---
+// --- init (centralized auth) ---
 async function initApp(){
-  const ok=await checkAuth();
-  if(!ok){
-    document.getElementById('login-page').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
+  const tk=getToken();
+  const route=getRoute();
+  const isLoginRoute = route==='admin/login' || route==='resident/login' || route==='login' || route==='';
+  if(!tk){
+    hideAllAuth();
+    document.getElementById('auth-page').classList.remove('hidden');
+    if(route==='admin/login') showAuthPanel(true);
+    else showAuthPanel(false);
     lucide.createIcons();
     return;
   }
-  document.getElementById('login-page').classList.add('hidden');
+  const ok=await checkAuth();
+  if(!ok){
+    hideAllAuth();
+    document.getElementById('auth-page').classList.remove('hidden');
+    if(route==='admin/login') showAuthPanel(true);
+    else showAuthPanel(false);
+    lucide.createIcons();
+    return;
+  }
+  // authenticated
+  hideAllAuth();
   document.getElementById('app').classList.remove('hidden');
-  const prefix=currentUser.role==='admin'?'admin':currentUser.role==='resident'?'resident':currentUser.role;
-  if(!getRoute().startsWith(`${prefix}/`)) history.replaceState({},'',`/${prefix}/dashboard`);
+  const role=currentUser.role;
+  const prefix=['admin','committee','staff'].includes(role)?'admin':'resident';
+  const curRoute=getRoute();
+  if(!curRoute || curRoute==='login' || curRoute==='admin/login' || curRoute==='resident/login' || !curRoute.startsWith(prefix+'/')){
+    history.replaceState({},'',`/${prefix}/dashboard`);
+  }
   buildNav();
   render();
   loadNotifCount();
