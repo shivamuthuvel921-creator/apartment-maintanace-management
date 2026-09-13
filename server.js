@@ -252,6 +252,40 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS complied_states (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resident_id INTEGER,
+    house_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT CHECK(status IN ('Complied','Pending','Not Complied')) DEFAULT 'Pending',
+    completion_date TEXT,
+    updated_at TEXT,
+    responsible_area TEXT,
+    responsible_person TEXT,
+    created_at TEXT,
+    FOREIGN KEY(resident_id) REFERENCES residents(id) ON DELETE CASCADE,
+    FOREIGN KEY(house_id) REFERENCES houses(id) ON DELETE SET NULL
+  );
+`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS compliance_states (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resident_id INTEGER,
+    house_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT CHECK(status IN ('Complied','Pending','Not Complied')) DEFAULT 'Pending',
+    completion_date TEXT,
+    updated_at TEXT,
+    responsible_area TEXT,
+    responsible_person TEXT,
+    created_at TEXT,
+    FOREIGN KEY(resident_id) REFERENCES residents(id) ON DELETE CASCADE,
+    FOREIGN KEY(house_id) REFERENCES houses(id) ON DELETE SET NULL
+  );
+`);
 // Ensure uploads dir exists
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 if(!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -533,6 +567,45 @@ function seedIfEmpty(){
 }
 seedIfEmpty();
 
+function seedComplianceIfEmpty(){
+  try{
+    const c1 = db.prepare(`SELECT COUNT(*) as c FROM complied_states`).get().c;
+    const c2 = db.prepare(`SELECT COUNT(*) as c FROM compliance_states`).get().c;
+    if(c1>0 || c2>0) return;
+    console.log('Seeding compliance states...');
+    const now = nowISO();
+    // Get all residents that have a house and a linked user (active residents)
+    const residents = db.prepare(`SELECT r.*, h.house_no FROM residents r LEFT JOIN houses h ON h.id=r.house_id WHERE r.house_id IS NOT NULL ORDER BY r.id ASC`).all();
+    const templates = [
+      { title:'Maintenance Payment', description:'Monthly maintenance payment for apartment upkeep', responsible_area:'Accounts', responsible_person:'Treasurer - Anil Kapoor', status:'Complied', daysAgo:3 },
+      { title:'Community Rules Acknowledgement', description:'Acknowledgement of community rules and regulations', responsible_area:'Administration', responsible_person:'Secretary - Lakshmi Iyer', status:'Complied', daysAgo:5 },
+      { title:'Document Verification', description:'Identity and ownership document verification', responsible_area:'Administration', responsible_person:'President - R. Suresh', status:'Complied', daysAgo:8 },
+      { title:'Fire Safety Compliance', description:'Fire extinguisher and safety equipment verification', responsible_area:'Safety', responsible_person:'Safety Officer', status:'Pending', daysAgo:null },
+      { title:'Waste Management Compliance', description:'Segregation and disposal compliance', responsible_area:'Housekeeping', responsible_person:'Housekeeping Team', status:'Not Complied', daysAgo:null },
+    ];
+    for(const r of residents){
+      for(const t of templates){
+        const status = t.status;
+        // Randomize a bit per resident: some residents have fewer complied
+        // Keep deterministic: use resident id modulo
+        let finalStatus = status;
+        if(r.id % 3 === 0 && t.title==='Waste Management Compliance') finalStatus='Complied';
+        if(r.id % 4 === 0 && t.title==='Fire Safety Compliance') finalStatus='Complied';
+        const completion = finalStatus==='Complied' ? new Date(Date.now() - (t.daysAgo||5)*86400000 - (r.id%5)*86400000).toISOString().slice(0,10) : null;
+        const updated = finalStatus==='Complied' ? completion : new Date(Date.now() - (r.id%7)*86400000).toISOString().slice(0,10);
+        const desc = t.description;
+        // Insert into both tables for compatibility
+        db.prepare(`INSERT INTO complied_states (resident_id, house_id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+          .run(r.id, r.house_id, t.title, desc, finalStatus, completion, updated, t.responsible_area, t.responsible_person, now);
+        db.prepare(`INSERT INTO compliance_states (resident_id, house_id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+          .run(r.id, r.house_id, t.title, desc, finalStatus, completion, updated, t.responsible_area, t.responsible_person, now);
+      }
+    }
+    console.log('Compliance seed complete');
+  }catch(e){ console.error('compliance seed fail', e.message); }
+}
+seedComplianceIfEmpty();
+
 function ensureRoleUsers(){
   const accounts = [
     { username:'committee', email:'committee@vijayapartment.com', password:'committee123', role:'committee', display_name:'Committee Desk', phone:'9876500020' },
@@ -543,6 +616,8 @@ function ensureRoleUsers(){
     if(!existing){
       db.prepare(`INSERT INTO users (username,email,password_hash,role,display_name,phone,is_active,created_at) VALUES (?,?,?,?,?,?,?,?)`)
         .run(account.username, account.email, bcrypt.hashSync(account.password,10), account.role, account.display_name, account.phone, 1, nowISO());
+    }else if(account.role==='committee'){
+      db.prepare(`UPDATE users SET role='committee', display_name=?, is_active=1 WHERE id=?`).run('Committee Member', existing.id);
     }
   });
 }
@@ -780,6 +855,141 @@ app.put('/api/resident/profile/notifications', authRequired, (req,res)=>{
   res.json({ message:'Notification preferences updated.', preferences: fresh });
 });
 
+// ============ RESIDENT DASHBOARD 5-MODULE APIS (isolated, real data) ============
+// Family Members - only same house members excluding self
+app.get('/api/resident/family', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.user.resident_id);
+  if(!resident) return res.json([]);
+  if(!resident.house_id) return res.json([]);
+  const family = db.prepare(`SELECT id, roll_no, name, relation, phone, email, dob, gender, type, status, photo_url, house_id, created_at FROM residents WHERE house_id=? AND id!=? ORDER BY CASE relation WHEN 'Spouse' THEN 1 WHEN 'Son' THEN 2 WHEN 'Daughter' THEN 3 ELSE 4 END, name ASC`).all(resident.house_id, resident.id);
+  const safe = Array.isArray(family) ? family : [];
+  res.json(safe);
+});
+app.get('/api/resident/compliance', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  try{
+    // Try complied_states first, fallback to compliance_states
+    let rows=[];
+    try{ rows = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM complied_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(req.user.resident_id); }catch{}
+    if(!rows || !rows.length){
+      try{ rows = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM compliance_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(req.user.resident_id); }catch{}
+    }
+    const safe = Array.isArray(rows) ? rows : [];
+    // Validate before mapping
+    const mapped = safe.map(r=>({
+      id:r.id,
+      title:r.title||'',
+      description:r.description||'',
+      status:r.status||'Pending',
+      completion_date:r.completion_date||null,
+      updated_at:r.updated_at||r.created_at||null,
+      responsible_area:r.responsible_area||'',
+      responsible_person:r.responsible_person||'',
+      created_at:r.created_at||null
+    }));
+    res.json(mapped);
+  }catch(e){ res.status(500).json({error:'Failed to load compliance states'}); }
+});
+app.get('/api/resident/complied-states', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  let rows=[];
+  try{ rows = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM complied_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(req.user.resident_id); }catch{ rows=[]; }
+  if(!rows || !rows.length){
+    try{ rows = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM compliance_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(req.user.resident_id); }catch{}
+  }
+  res.json(Array.isArray(rows)?rows:[]);
+});
+app.get('/api/resident/committee-meetings', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  // All upcoming + recent meetings are community-visible; not filtered by resident
+  const rows = db.prepare(`SELECT id, title, date, time, venue, agenda, attendees, minutes_status, status, created_at FROM meetings ORDER BY date ASC`).all();
+  const safe = Array.isArray(rows) ? rows : [];
+  // Sort: upcoming first, then completed
+  const sorted = safe.slice().sort((a,b)=>{
+    const aUpcoming = a.status==='Upcoming' ? 0 : 1;
+    const bUpcoming = b.status==='Upcoming' ? 0 : 1;
+    if(aUpcoming!==bUpcoming) return aUpcoming-bUpcoming;
+    return new Date(a.date)-new Date(b.date);
+  });
+  res.json(sorted);
+});
+app.get('/api/resident/meetings', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const rows = db.prepare(`SELECT id, title, date, time, venue, agenda, attendees, minutes_status, status, created_at FROM meetings ORDER BY date ASC`).all();
+  res.json(Array.isArray(rows)?rows:[]);
+});
+app.get('/api/resident/events', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const rows = db.prepare(`SELECT id, name, date, time, venue, organizer, budget, fund_collected, status, description, created_at FROM events ORDER BY date ASC`).all();
+  const safe = Array.isArray(rows) ? rows : [];
+  // For residents: show upcoming first, then completed, but limit ordering
+  const sorted = safe.slice().sort((a,b)=>{
+    if(a.status==='Upcoming' && b.status!=='Upcoming') return -1;
+    if(b.status==='Upcoming' && a.status!=='Upcoming') return 1;
+    return new Date(a.date)-new Date(b.date);
+  });
+  res.json(sorted);
+});
+app.get('/api/resident/payments-summary', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.user.resident_id);
+  const houseId = resident?.house_id || 0;
+  const payments = db.prepare(`SELECT id, transaction_id, house_id, resident_id, amount, date, method, status, verified_by, receipt_no, notes, created_at FROM payments WHERE resident_id=? OR house_id=? ORDER BY date DESC`).all(req.user.resident_id, houseId);
+  const safe = Array.isArray(payments) ? payments : [];
+  const pendingAmount = safe.filter(p=>p.status==='Pending').reduce((s,p)=> s+Number(p.amount||0),0);
+  // Also compute via SQL as authoritative
+  const sqlPending = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE (resident_id=? OR house_id=?) AND status='Pending'`).get(req.user.resident_id, houseId).s;
+  const sqlPaid = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE (resident_id=? OR house_id=?) AND status='Paid'`).get(req.user.resident_id, houseId).s;
+  const lastPayment = safe.find(p=>p.status==='Paid') || null;
+  const dueDate = safe.find(p=>p.status==='Pending')?.date || null;
+  res.json({
+    pendingAmount: sqlPending,
+    totalPaid: sqlPaid,
+    dueDate,
+    lastPayment,
+    history: safe,
+    house: resident?.house_id ? db.prepare(`SELECT * FROM houses WHERE id=?`).get(resident.house_id) : null,
+    resident: { id:resident?.id, name:resident?.name, house_id: resident?.house_id }
+  });
+});
+// Convenience aggregated endpoint for the 5-module dashboard
+app.get('/api/resident/dashboard-modules', authRequired, (req,res)=>{
+  if(req.user.role!=='resident') return res.status(403).json({error:'Resident only'});
+  const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.user.resident_id);
+  const houseId = resident?.house_id || 0;
+  // Family
+  let family=[];
+  if(resident?.house_id){
+    family = db.prepare(`SELECT id, roll_no, name, relation, phone, email, dob, gender, type, status, photo_url FROM residents WHERE house_id=? AND id!=? ORDER BY name ASC`).all(houseId, resident.id);
+  }
+  // Compliance
+  let complied=[];
+  try{ complied = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person FROM complied_states WHERE resident_id=? ORDER BY updated_at DESC`).all(req.user.resident_id); }catch{}
+  if(!complied.length){
+    try{ complied = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person FROM compliance_states WHERE resident_id=? ORDER BY updated_at DESC`).all(req.user.resident_id); }catch{}
+  }
+  // Meetings
+  const meetings = db.prepare(`SELECT id, title, date, time, venue, agenda, attendees, minutes_status, status FROM meetings ORDER BY date ASC`).all();
+  // Events
+  const events = db.prepare(`SELECT id, name, date, time, venue, organizer, budget, fund_collected, status, description FROM events ORDER BY date ASC`).all();
+  // Payments
+  const payments = db.prepare(`SELECT id, transaction_id, house_id, resident_id, amount, date, method, status, receipt_no FROM payments WHERE resident_id=? OR house_id=? ORDER BY date DESC`).all(req.user.resident_id, houseId);
+  const pendingAmount = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE (resident_id=? OR house_id=?) AND status='Pending'`).get(req.user.resident_id, houseId).s;
+  res.json({
+    family: Array.isArray(family)?family:[],
+    compliedStates: Array.isArray(complied)?complied:[],
+    committeeMeetings: Array.isArray(meetings)?meetings:[],
+    events: Array.isArray(events)?events:[],
+    payment: {
+      pendingAmount,
+      history: Array.isArray(payments)?payments:[],
+      lastPayment: Array.isArray(payments)? (payments.find(p=>p.status==='Paid')||null) : null
+    },
+    resident: resident ? { id:resident.id, name:resident.name, house_id:resident.house_id, roll_no:resident.roll_no } : null
+  });
+});
+
 // Dashboard
 app.get('/api/dashboard/kpis', authRequired, (req,res)=>{
   const totalHouses = db.prepare(`SELECT COUNT(*) as c FROM houses`).get().c;
@@ -794,6 +1004,16 @@ app.get('/api/dashboard/kpis', authRequired, (req,res)=>{
   const upcomingMeetings = db.prepare(`SELECT COUNT(*) as c FROM meetings WHERE status='Upcoming'`).get().c;
   const openComplaints = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE status IN ('Open','Assigned','In Progress')`).get().c;
   const highPriority = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE priority='High' AND status!='Closed'`).get().c;
+  const complaintStatusRows = db.prepare(`SELECT status, COUNT(*) as c FROM complaints GROUP BY status`).all();
+  const complaintStatusCounts = { total:0, open:0, assigned:0, inProgress:0, resolved:0, closed:0 };
+  complaintStatusRows.forEach(row=>{
+    complaintStatusCounts.total += row.c;
+    if(row.status==='Open') complaintStatusCounts.open=row.c;
+    else if(row.status==='Assigned') complaintStatusCounts.assigned=row.c;
+    else if(row.status==='In Progress') complaintStatusCounts.inProgress=row.c;
+    else if(row.status==='Resolved') complaintStatusCounts.resolved=row.c;
+    else if(row.status==='Closed') complaintStatusCounts.closed=row.c;
+  });
   const openMaintenance = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets WHERE status IN ('Open','Assigned','In Progress')`).get().c;
   const bhk1 = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE bhk=1`).get().c;
   const bhk2 = db.prepare(`SELECT COUNT(*) as c FROM houses WHERE bhk=2`).get().c;
@@ -902,17 +1122,78 @@ function buildResidentDashboard(user){
   const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(user.resident_id);
   const house = resident?.house_id ? db.prepare(`SELECT * FROM houses WHERE id=?`).get(resident.house_id) : null;
   const houseId = resident?.house_id || 0;
-  const myDue = db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE house_id=? AND status='Pending'`).get(houseId).s;
-  const lastPayment = db.prepare(`SELECT * FROM payments WHERE (house_id=? OR resident_id=?) AND status='Paid' ORDER BY date DESC LIMIT 1`).get(houseId, user.resident_id);
-  const myOpenComplaints = db.prepare(`SELECT COUNT(*) as c FROM complaints WHERE resident_id=? AND status IN ('Open','Assigned','In Progress')`).get(user.resident_id).c;
-  const myMaintenance = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets WHERE house_id=? AND status IN ('Open','Assigned','In Progress')`).get(houseId).c;
-  const payments = db.prepare(`SELECT * FROM payments WHERE resident_id=? OR house_id=? ORDER BY date DESC LIMIT 5`).all(user.resident_id, houseId);
-  const complaints = db.prepare(`SELECT * FROM complaints WHERE resident_id=? ORDER BY created_at DESC LIMIT 5`).all(user.resident_id);
-  const maintenanceStats = (()=>{ const stats=db.prepare(`SELECT status, COUNT(*) as c FROM maintenance_tickets WHERE house_id=? GROUP BY status`).all(houseId); const m={}; stats.forEach(s=>m[s.status]=s.c); return {open:m['Open']||0, assigned:m['Assigned']||0, inProgress:m['In Progress']||0, completed:m['Completed']||0}; })();
-  const fundTrend = db.prepare(`SELECT substr(date,1,7) as month, SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END) as collected, SUM(CASE WHEN status='Pending' THEN amount ELSE 0 END) as pending FROM payments WHERE house_id=? OR resident_id=? GROUP BY month ORDER BY month ASC LIMIT 12`).all(houseId, user.resident_id);
-  const upcomingEvents = db.prepare(`SELECT * FROM events WHERE status='Upcoming' ORDER BY date ASC LIMIT 3`).all();
-  const upcomingMeetings = db.prepare(`SELECT * FROM meetings WHERE status='Upcoming' ORDER BY date ASC LIMIT 3`).all();
-  return { welcome: `Welcome, ${resident?.name||user.display_name}`, date: new Date().toISOString().slice(0,10), house, resident, myDue, lastPayment, myOpenComplaints, myMaintenance, payments, complaints, maintenanceStats, fundTrend: fundTrend.length?fundTrend:[{month:new Date().toISOString().slice(0,7), collected:0, pending:myDue}], upcomingEvents, upcomingMeetings };
+  // Family members (same house, excluding self)
+  let familyMembers=[];
+  try{
+    if(houseId) familyMembers = db.prepare(`SELECT id, roll_no, name, relation, phone, email, dob, gender, type, status, photo_url, house_id FROM residents WHERE house_id=? AND id!=? ORDER BY CASE relation WHEN 'Spouse' THEN 1 WHEN 'Son' THEN 2 WHEN 'Daughter' THEN 3 ELSE 4 END, name ASC`).all(houseId, resident.id);
+  }catch{ familyMembers=[]; }
+  // Complied States - resident's compliance records
+  let compliedStates=[];
+  try{
+    compliedStates = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM complied_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(user.resident_id);
+    if(!compliedStates.length) compliedStates = db.prepare(`SELECT id, title, description, status, completion_date, updated_at, responsible_area, responsible_person, created_at FROM compliance_states WHERE resident_id=? ORDER BY CASE status WHEN 'Complied' THEN 1 WHEN 'Pending' THEN 2 ELSE 3 END, updated_at DESC`).all(user.resident_id);
+  }catch{ compliedStates=[]; }
+  // Committee Meeting States - all meetings sorted upcoming first
+  let committeeMeetings=[];
+  try{
+    const allMeetings = db.prepare(`SELECT id, title, date, time, venue, agenda, attendees, minutes_status, status, created_at FROM meetings ORDER BY date ASC`).all();
+    const safe = Array.isArray(allMeetings)?allMeetings:[];
+    committeeMeetings = safe.slice().sort((a,b)=>{
+      const aU = a.status==='Upcoming'?0:1;
+      const bU = b.status==='Upcoming'?0:1;
+      if(aU!==bU) return aU-bU;
+      return new Date(a.date)-new Date(b.date);
+    });
+  }catch{ committeeMeetings=[]; }
+  // Event Details
+  let eventDetails=[];
+  try{
+    const evs = db.prepare(`SELECT id, name, date, time, venue, organizer, budget, fund_collected, status, description, created_at FROM events ORDER BY date ASC`).all();
+    const safeE = Array.isArray(evs)?evs:[];
+    eventDetails = safeE.slice().sort((a,b)=>{
+      if(a.status==='Upcoming' && b.status!=='Upcoming') return -1;
+      if(b.status==='Upcoming' && a.status!=='Upcoming') return 1;
+      return new Date(a.date)-new Date(b.date);
+    });
+  }catch{ eventDetails=[]; }
+  // Payment - isolated to resident/house
+  let paymentHistory=[];
+  try{ paymentHistory = db.prepare(`SELECT id, transaction_id, house_id, resident_id, amount, date, method, status, receipt_no, verified_by, notes, created_at FROM payments WHERE resident_id=? OR house_id=? ORDER BY date DESC`).all(user.resident_id, houseId); }catch{ paymentHistory=[]; }
+  const safePay = Array.isArray(paymentHistory)?paymentHistory:[];
+  const pendingAmount = (()=>{ try{ return db.prepare(`SELECT COALESCE(SUM(amount),0) as s FROM payments WHERE (resident_id=? OR house_id=?) AND status='Pending'`).get(user.resident_id, houseId).s; }catch{ return safePay.filter(p=>p.status==='Pending').reduce((s,p)=>s+Number(p.amount||0),0); } })();
+  const lastPayment = safePay.find(p=>p.status==='Paid')||null;
+  // Ensure arrays validated
+  const ensureArr = (v)=> Array.isArray(v)?v:[];
+  return {
+    welcome: `Welcome, ${resident?.name||user.display_name}`,
+    date: new Date().toISOString().slice(0,10),
+    house, resident,
+    // === 5 MODULES ONLY (new) ===
+    familyMembers: ensureArr(familyMembers),
+    compliedStates: ensureArr(compliedStates),
+    committeeMeetings: ensureArr(committeeMeetings),
+    eventDetails: ensureArr(eventDetails),
+    payment: {
+      pendingAmount,
+      lastPayment,
+      history: ensureArr(safePay),
+      dueDate: safePay.find(p=>p.status==='Pending')?.date||null
+    },
+    // Alias keys for frontend compat (old and new naming)
+    family: ensureArr(familyMembers),
+    events: ensureArr(eventDetails),
+    meetings: ensureArr(committeeMeetings),
+    payments: ensureArr(safePay),
+    // Legacy deprecated fields kept but not used in new UI (for backward compat)
+    myDue: pendingAmount,
+    lastPayment,
+    payments: ensureArr(safePay),
+    myOpenComplaints: 0,
+    myMaintenance: 0,
+    fundTrend: [],
+    upcomingEvents: ensureArr(eventDetails).slice(0,3),
+    upcomingMeetings: ensureArr(committeeMeetings).slice(0,3)
+  };
 }
 function buildAdminDashboard(){
   const totalHouses = db.prepare(`SELECT COUNT(*) as c FROM houses`).get().c;
@@ -964,7 +1245,7 @@ function buildAdminDashboard(){
     totalHouses, occupied, vacant, totalFamilies, totalResidents, totalCollected, pendingAmount,
     bhk:{bhk1,bhk2,bhk3},
     // stats objects (backward compat)
-    complaintStats:{open:openComplaints, highPriority},
+    complaintStats:{...complaintStatusCounts, highPriority},
     openComplaints, highPriority,
     openMaintenance,
     maintenanceStats,
@@ -1116,19 +1397,28 @@ app.get('/api/residents/:id', authRequired, (req,res)=>{
   const family = resident.house_id ? db.prepare(`SELECT * FROM residents WHERE house_id=? AND id!=?`).all(resident.house_id, resident.id) : [];
   res.json({ resident, payments, complaints, maintenance, family });
 });
-app.post('/api/residents', authRequired, requireRole('admin'), (req,res)=>{
+app.post('/api/residents', authRequired, (req,res)=>{
   const { name, house_id, relation, phone, email, dob, gender, type, status, address, city, state, country, postal_code, emergency_name, emergency_phone } = req.body;
   if(!name) return res.status(400).json({error:'Name required'});
+  let residentHouseId = house_id || null;
+  if(req.user.role==='resident'){
+    const owner = db.prepare(`SELECT house_id FROM residents WHERE id=?`).get(req.user.resident_id);
+    if(!owner?.house_id) return res.status(400).json({error:'Your profile is not linked to a house'});
+    if(residentHouseId && String(residentHouseId)!==String(owner.house_id)) return res.status(403).json({error:'Family members can only be added to your house'});
+    residentHouseId = owner.house_id;
+  }else if(req.user.role!=='admin'){
+    return res.status(403).json({error:'Access denied'});
+  }
   const roll = nextId('residents','RES','roll_no');
   const now=nowISO();
   const result = db.prepare(`INSERT INTO residents (roll_no,name,house_id,relation,phone,email,dob,gender,type,status,address,city,state,country,postal_code,emergency_name,emergency_phone,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(roll,name,house_id||null,relation||'Self',phone||'',email||'',dob||'',gender||'Male',type||'Owner',status||'Active',address||'',city||'Bengaluru',state||'Karnataka',country||'India',postal_code||'560001',emergency_name||'',emergency_phone||'',now);
+    .run(roll,name,residentHouseId,relation||'Self',phone||'',email||'',dob||'',gender||'Male',type||'Owner',status||'Active',address||'',city||'Bengaluru',state||'Karnataka',country||'India',postal_code||'560001',emergency_name||'',emergency_phone||'',now);
   const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(result.lastInsertRowid);
-  if(house_id){
+  if(residentHouseId){
     // if house vacant, mark occupied
-    const house = db.prepare(`SELECT * FROM houses WHERE id=?`).get(house_id);
+    const house = db.prepare(`SELECT * FROM houses WHERE id=?`).get(residentHouseId);
     if(house && house.occupancy==='Vacant'){
-      db.prepare(`UPDATE houses SET occupancy='Occupied', resident_id=? WHERE id=?`).run(resident.id, house_id);
+      db.prepare(`UPDATE houses SET occupancy='Occupied', resident_id=? WHERE id=?`).run(resident.id, residentHouseId);
     }
   }
   // create user login for resident if email provided
@@ -1146,8 +1436,14 @@ app.post('/api/residents', authRequired, requireRole('admin'), (req,res)=>{
 app.put('/api/residents/:id', authRequired, (req,res)=>{
   const resident = db.prepare(`SELECT * FROM residents WHERE id=?`).get(req.params.id);
   if(!resident) return res.status(404).json({error:'Resident not found'});
-  // RBAC: resident can edit own profile, admin can edit any
-  if(req.user.role==='resident' && String(req.user.resident_id)!==String(req.params.id)) return res.status(403).json({error:'Access denied'});
+  // Residents can manage their own house members, but cannot move records between houses.
+  if(req.user.role==='resident'){
+    const owner = db.prepare(`SELECT house_id FROM residents WHERE id=?`).get(req.user.resident_id);
+    if(!owner?.house_id || String(resident.house_id)!==String(owner.house_id)) return res.status(403).json({error:'Access denied'});
+    if(req.body.house_id !== undefined && String(req.body.house_id)!==String(owner.house_id)) return res.status(403).json({error:'Family members can only remain in your house'});
+  }else if(req.user.role!=='admin'){
+    return res.status(403).json({error:'Access denied'});
+  }
   const fields = ['name','house_id','relation','phone','email','dob','gender','type','status','photo_url','address','city','state','country','postal_code','emergency_name','emergency_phone'];
   const updates = {};
   fields.forEach(f=> updates[f] = req.body[f] !== undefined ? req.body[f] : resident[f]);
@@ -1178,7 +1474,7 @@ app.get('/api/events', authRequired, (req,res)=>{
   const whereSql = where.length? `WHERE ${where.join(' AND ')}` : '';
   const count = db.prepare(`SELECT COUNT(*) as c FROM events ${whereSql}`).get(...params).c;
   const offset=(parseInt(page)-1)*parseInt(limit);
-  const rows = db.prepare(`SELECT * FROM events ${whereSql} ORDER BY date ASC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
+  const rows = db.prepare(`SELECT * FROM events ${whereSql} ORDER BY CASE WHEN status='Upcoming' AND date >= date('now') THEN 0 WHEN status NOT IN ('Completed','Cancelled') THEN 1 ELSE 2 END ASC, date ASC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
   res.json({ data:rows, total:count, page:parseInt(page), limit:parseInt(limit) });
 });
 app.get('/api/events/:id', authRequired, (req,res)=>{
@@ -1226,7 +1522,7 @@ app.get('/api/meetings', authRequired, (req,res)=>{
   const whereSql = where.length? `WHERE ${where.join(' AND ')}` : '';
   const count = db.prepare(`SELECT COUNT(*) as c FROM meetings ${whereSql}`).get(...params).c;
   const offset=(parseInt(page)-1)*parseInt(limit);
-  const rows = db.prepare(`SELECT * FROM meetings ${whereSql} ORDER BY date ASC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
+  const rows = db.prepare(`SELECT * FROM meetings ${whereSql} ORDER BY CASE WHEN status='Upcoming' AND date >= date('now') THEN 0 WHEN status NOT IN ('Completed','Cancelled') THEN 1 ELSE 2 END ASC, date ASC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
   res.json({ data:rows, total:count, page:parseInt(page), limit:parseInt(limit) });
 });
 app.get('/api/meetings/:id', authRequired, (req,res)=>{
@@ -1272,7 +1568,7 @@ app.get('/api/payments', authRequired, (req,res)=>{
   const whereSql = where.length? `WHERE ${where.join(' AND ')}` : '';
   const count = db.prepare(`SELECT COUNT(*) as c FROM payments p LEFT JOIN houses h ON h.id=p.house_id LEFT JOIN residents r ON r.id=p.resident_id ${whereSql}`).get(...params).c;
   const offset=(parseInt(page)-1)*parseInt(limit);
-  const rows = db.prepare(`SELECT p.*, h.house_no, h.block, r.name as resident_name, r.roll_no FROM payments p LEFT JOIN houses h ON h.id=p.house_id LEFT JOIN residents r ON r.id=p.resident_id ${whereSql} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
+  const rows = db.prepare(`SELECT p.*, h.house_no, h.block, r.name as resident_name, r.roll_no FROM payments p LEFT JOIN houses h ON h.id=p.house_id LEFT JOIN residents r ON r.id=p.resident_id ${whereSql} ORDER BY CASE WHEN p.status IN ('Pending','Partial') THEN 0 ELSE 1 END ASC, p.created_at DESC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
   res.json({ data:rows, total:count, page:parseInt(page), limit:parseInt(limit) });
 });
 app.get('/api/payments/:id', authRequired, (req,res)=>{
@@ -1334,8 +1630,11 @@ app.get('/api/maintenance', authRequired, (req,res)=>{
   const whereSql = where.length? `WHERE ${where.join(' AND ')}` : '';
   const count = db.prepare(`SELECT COUNT(*) as c FROM maintenance_tickets ${whereSql}`).get(...params).c;
   const offset=(parseInt(page)-1)*parseInt(limit);
-  const rows = db.prepare(`SELECT m.*, h.house_no FROM maintenance_tickets m LEFT JOIN houses h ON h.id=m.house_id ${whereSql} ORDER BY m.created_at DESC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
-  res.json({ data:rows, total:count, page:parseInt(page), limit:parseInt(limit) });
+  const rows = db.prepare(`SELECT m.*, h.house_no FROM maintenance_tickets m LEFT JOIN houses h ON h.id=m.house_id ${whereSql} ORDER BY CASE WHEN m.status IN ('Completed','Closed') THEN 2 WHEN m.due_date >= date('now') THEN 0 ELSE 1 END ASC, m.created_at DESC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
+  const categoryRows = db.prepare(`SELECT category, COUNT(*) as c FROM maintenance_tickets ${req.user.role==='resident' && req.user.resident_id ? `WHERE (house_id=(SELECT house_id FROM residents WHERE id=?) OR house_id IS NULL)` : ''} GROUP BY category`).all(...(req.user.role==='resident' && req.user.resident_id ? [req.user.resident_id] : []));
+  const categoryStats = {};
+  categoryRows.forEach(row=>{ categoryStats[row.category]=row.c; });
+  res.json({ data:rows, total:count, page:parseInt(page), limit:parseInt(limit), categoryStats });
 });
 app.get('/api/maintenance/:id', authRequired, (req,res)=>{
   const m = db.prepare(`SELECT m.*, h.house_no, h.block FROM maintenance_tickets m LEFT JOIN houses h ON h.id=m.house_id WHERE m.id=?`).get(req.params.id);
@@ -1541,6 +1840,28 @@ app.get('/api/reports/summary', authRequired, (req,res)=>{
   const complaintTrend = db.prepare(`SELECT status, COUNT(*) as c FROM complaints GROUP BY status`).all();
   res.json({ totalCollected, pending, expenses, balance, monthly, budgetVsActual, maintenanceCosts, paymentTrend, complaintTrend });
 });
+app.get('/api/reports/timeseries', authRequired, (req,res)=>{
+  if(!['admin','committee'].includes(req.user.role)) return res.status(403).json({error:'Forbidden: insufficient role'});
+  const period=req.query.period||'daily';
+  if(!['daily','weekly','monthly'].includes(period)) return res.status(400).json({error:'Invalid report period'});
+  const groupBy=(column)=>period==='weekly' ? `strftime('%Y-W%W', ${column})` : period==='monthly' ? `substr(${column},1,7)` : `substr(${column},1,10)`;
+  const rows=db.prepare(`
+    SELECT period, SUM(payments) as payments, SUM(collected) as collected, SUM(complaints) as complaints, SUM(maintenance) as maintenance, SUM(events) as events
+    FROM (
+      SELECT ${groupBy('date')} as period, COUNT(*) as payments, COALESCE(SUM(CASE WHEN status='Paid' THEN amount ELSE 0 END),0) as collected, 0 as complaints, 0 as maintenance, 0 as events FROM payments GROUP BY period
+      UNION ALL
+      SELECT ${groupBy('created_at')} as period, 0, 0, COUNT(*), 0, 0 FROM complaints GROUP BY period
+      UNION ALL
+      SELECT ${groupBy('created_at')} as period, 0, 0, 0, COUNT(*), 0 FROM maintenance_tickets GROUP BY period
+      UNION ALL
+      SELECT ${groupBy('date')} as period, 0, 0, 0, 0, COUNT(*) FROM events GROUP BY period
+    ) grouped
+    WHERE period IS NOT NULL AND period != ''
+    GROUP BY period
+    ORDER BY period DESC
+  `).all();
+  res.json({ period, data:rows });
+});
 
 // Notifications
 app.get('/api/notifications', authRequired, (req,res)=>{
@@ -1601,6 +1922,38 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), (req,res)=>{
   );
   audit(req.user,'UPDATE','users',req.params.id,`Updated user ${u.email}`);
   res.json(db.prepare(`SELECT id, username, email, role, display_name, phone, resident_id, is_active FROM users WHERE id=?`).get(req.params.id));
+});
+app.get('/api/admin/profile', authRequired, requireRole('admin','committee','staff'), (req,res)=>{
+  const user=db.prepare(`SELECT id, username, email, role, display_name, phone, is_active, created_at FROM users WHERE id=?`).get(req.user.id);
+  if(!user) return res.status(404).json({error:'Profile not found'});
+  const lastLogin=db.prepare(`SELECT timestamp FROM audit_logs WHERE user_id=? AND action='LOGIN' ORDER BY timestamp DESC LIMIT 1`).get(req.user.id);
+  const activity=db.prepare(`SELECT action, module, details, timestamp FROM audit_logs WHERE user_id=? ORDER BY timestamp DESC LIMIT 8`).all(req.user.id);
+  res.json({ user, lastLogin:lastLogin?.timestamp||null, activity });
+});
+app.put('/api/admin/profile', authRequired, requireRole('admin','committee','staff'), (req,res)=>{
+  const user=db.prepare(`SELECT * FROM users WHERE id=?`).get(req.user.id);
+  if(!user) return res.status(404).json({error:'Profile not found'});
+  const displayName=String(req.body.display_name??user.display_name).trim();
+  const phone=String(req.body.phone??(user.phone||'')).trim();
+  const email=String(req.body.email??user.email).trim();
+  if(!displayName) return res.status(400).json({error:'Display name is required'});
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Please enter a valid email address'});
+  const exists=db.prepare(`SELECT id FROM users WHERE email=? AND id!=?`).get(email,user.id);
+  if(exists) return res.status(400).json({error:'Email is already in use'});
+  db.prepare(`UPDATE users SET display_name=?, phone=?, email=? WHERE id=?`).run(displayName,phone,email,user.id);
+  audit(req.user,'UPDATE','admin_profile',user.id,'Updated admin profile');
+  res.json({message:'Profile updated successfully',user:db.prepare(`SELECT id, username, email, role, display_name, phone, is_active, created_at FROM users WHERE id=?`).get(user.id)});
+});
+app.put('/api/admin/profile/password', authRequired, requireRole('admin','committee','staff'), (req,res)=>{
+  const { currentPassword, newPassword, confirmPassword }=req.body;
+  if(!currentPassword||!newPassword||!confirmPassword) return res.status(400).json({error:'All password fields are required'});
+  if(newPassword.length<6) return res.status(400).json({error:'New password must be at least 6 characters'});
+  if(newPassword!==confirmPassword) return res.status(400).json({error:'Passwords do not match'});
+  const user=db.prepare(`SELECT * FROM users WHERE id=?`).get(req.user.id);
+  if(!bcrypt.compareSync(currentPassword,user.password_hash)) return res.status(400).json({error:'Current password is incorrect'});
+  db.prepare(`UPDATE users SET password_hash=? WHERE id=?`).run(bcrypt.hashSync(newPassword,10),user.id);
+  audit(req.user,'UPDATE','admin_password',user.id,'Changed admin password');
+  res.json({message:'Password changed successfully'});
 });
 
 // Global search
